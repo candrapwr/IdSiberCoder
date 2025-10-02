@@ -1,0 +1,32 @@
+# Node dependencies
+node_modules/
+
+# VS Code build output
+out/
+
+# Logs and caches
+npm-debug.log*
+yarn-error.log*
+*.log
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# VS Code settings
+.vscode/
+.vscode-test/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Coverage / test output
+coverage/
+
+# Package artifacts
+*.vsix

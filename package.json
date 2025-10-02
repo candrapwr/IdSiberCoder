@@ -1,0 +1,92 @@
+{
+  "name": "idsibercoder",
+  "displayName": "IdSiberCoder",
+  "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
+  "version": "0.0.1",
+  "publisher": "idsiber",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "AI"
+  ],
+  "activationEvents": [
+    "onCommand:idSiberCoder.openPanel",
+    "onCommand:idSiberCoder.sendPrompt",
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "idSiberCoder.openPanel",
+        "title": "IdSiberCoder: Open Assistant",
+        "category": "IdSiberCoder"
+      },
+      {
+        "command": "idSiberCoder.sendPrompt",
+        "title": "IdSiberCoder: Send Prompt",
+        "category": "IdSiberCoder"
+      }
+    ],
+    "configuration": {
+      "title": "IdSiberCoder",
+      "properties": {
+        "idSiberCoder.apiKey": {
+          "type": "string",
+          "description": "DeepSeek API key. Leave blank to be prompted on first use.",
+          "default": ""
+        },
+        "idSiberCoder.baseUrl": {
+          "type": "string",
+          "description": "Optional custom DeepSeek API base URL.",
+          "default": "https://api.deepseek.com"
+        },
+        "idSiberCoder.model": {
+          "type": "string",
+          "description": "DeepSeek model identifier to use for completions.",
+          "default": "deepseek-chat"
+        },
+        "idSiberCoder.enableContextOptimization": {
+          "type": "boolean",
+          "description": "Enable Codex-style context deduplication and summaries.",
+          "default": true
+        },
+        "idSiberCoder.contextSummaryThreshold": {
+          "type": "number",
+          "description": "Number of turns before summarization begins.",
+          "default": 12
+        },
+        "idSiberCoder.contextSummaryRetention": {
+          "type": "number",
+          "description": "Number of latest turns kept verbatim when summarizing.",
+          "default": 6
+        },
+        "idSiberCoder.maxIterations": {
+          "type": "number",
+          "description": "Maximum chained tool calls per request.",
+          "default": 12
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "pretest": "npm run compile",
+    "test": "node ./out/test/runTests.js"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@types/vscode": "^1.85.0",
+    "@types/markdown-it": "^13.0.6",
+    "typescript": "^5.4.5",
+    "tslib": "^2.6.2",
+    "@vscode/test-electron": "^2.3.6"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "markdown-it": "^13.0.1"
+  }
+}
