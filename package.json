@@ -2,7 +2,7 @@
   "name": "idsibercoder",
   "displayName": "IdSiberCoder",
   "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "idsiber",
   "engines": {
     "vscode": "^1.85.0"
@@ -18,11 +18,6 @@
   "categories": [
     "Other",
     "AI"
-  ],
-  "activationEvents": [
-    "onCommand:idSiberCoder.openPanel",
-    "onCommand:idSiberCoder.sendPrompt",
-    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -88,6 +83,25 @@
           "default": 12
         }
       }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "idsibercoder",
+          "title": "IdSiberCoder",
+          "icon": "media/activity-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "idsibercoder": [
+        {
+          "type": "webview",
+          "id": "idsibercoder.assistantView",
+          "name": "Assistant",
+          "icon": "media/activity-icon.svg"
+        }
+      ]
     }
   },
   "scripts": {

@@ -25,6 +25,7 @@ let modelOptions = [];
 let activeModelOptionId;
 let providerInfos = [];
 let apiOverlayOpen = false;
+let handshakeTimer;
 
 const escapeHtml = (value = '') =>
     value
@@ -432,7 +433,12 @@ sessionsCreateButton?.addEventListener('click', () => {
 
 window.addEventListener('message', (event) => {
     const { type, state, message, value } = event.data;
+    if (type === 'ping') {
+        vscode.postMessage({ type: 'pong' });
+        return;
+    }
     if (type === 'state') {
+        stopHandshake();
         baseMessages = state.messages ?? [];
         extraMessages.length = 0;
         if (state.workingDirectory) {
@@ -451,12 +457,15 @@ window.addEventListener('message', (event) => {
         renderHistory();
     }
     if (type === 'message') {
+        stopHandshake();
         addBaseMessage(message);
     }
     if (type === 'fileResult') {
+        stopHandshake();
         addExtraMessage(message);
     }
     if (type === 'loading') {
+        stopHandshake();
         isLoading = Boolean(value);
         renderHistory();
     }
@@ -464,3 +473,21 @@ window.addEventListener('message', (event) => {
 
 renderHistory();
 renderModelOptions();
+
+function startHandshake() {
+    if (handshakeTimer) {
+        return;
+    }
+    const sendReady = () => vscode.postMessage({ type: 'webview:ready' });
+    sendReady();
+    handshakeTimer = setInterval(sendReady, 1000);
+}
+
+function stopHandshake() {
+    if (handshakeTimer) {
+        clearInterval(handshakeTimer);
+        handshakeTimer = undefined;
+    }
+}
+
+startHandshake();

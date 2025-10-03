@@ -15,6 +15,7 @@ export interface PanelCallbacks {
     onSwitchSession: (sessionId: string) => void;
     onModelSelect: (selectionId: string) => void;
     onSaveApiKey: (providerId: string, apiKey: string | undefined) => void;
+    onReady?: () => void;
 }
 
 export type PanelRole = 'user' | 'assistant' | 'tool';
@@ -59,6 +60,52 @@ export interface PanelModelOption {
     modelId: string;
 }
 
+export function initializeCodexWebview(
+    webview: vscode.Webview,
+    context: vscode.ExtensionContext,
+    callbacks: PanelCallbacks,
+    disposables: vscode.Disposable[]
+): void {
+    webview.html = getCodexHtml(webview, context);
+
+    webview.onDidReceiveMessage((message) => {
+        if (message?.type === 'prompt') {
+            callbacks.onPrompt(message.prompt);
+        }
+        if (message?.type === 'fileTool') {
+            callbacks.onFileTool(message.payload);
+        }
+        if (message?.type === 'sessions:create') {
+            callbacks.onCreateSession();
+        }
+        if (message?.type === 'sessions:switch' && typeof message.sessionId === 'string') {
+            callbacks.onSwitchSession(message.sessionId);
+        }
+        if (message?.type === 'sessions:delete' && typeof message.sessionId === 'string') {
+            callbacks.onDeleteSession(message.sessionId);
+        }
+        if (message?.type === 'model:select' && typeof message.selectionId === 'string') {
+            callbacks.onModelSelect(message.selectionId);
+        }
+        if (
+            message?.type === 'provider:apikey:set' &&
+            typeof message.providerId === 'string' &&
+            typeof message.apiKey === 'string'
+        ) {
+            callbacks.onSaveApiKey(message.providerId, message.apiKey);
+        }
+        if (message?.type === 'provider:apikey:clear' && typeof message.providerId === 'string') {
+            callbacks.onSaveApiKey(message.providerId, undefined);
+        }
+        if (message?.type === 'pong') {
+            callbacks.onReady?.();
+        }
+        if (message?.type === 'webview:ready') {
+            callbacks.onReady?.();
+        }
+    }, undefined, disposables);
+}
+
 export class CodexPanel implements vscode.Disposable {
     static readonly viewType = 'idSiberCoder.codexPanel';
     private static currentPanel: CodexPanel | undefined;
@@ -90,6 +137,10 @@ export class CodexPanel implements vscode.Disposable {
         CodexPanel.currentPanel = new CodexPanel(panel, context, callbacks);
     }
 
+    static getActivePanel(): CodexPanel | undefined {
+        return CodexPanel.currentPanel;
+    }
+
     private readonly disposables: vscode.Disposable[] = [];
 
     private constructor(
@@ -97,41 +148,7 @@ export class CodexPanel implements vscode.Disposable {
         private readonly context: vscode.ExtensionContext,
         private readonly callbacks: PanelCallbacks
     ) {
-        this.panel.webview.html = this.getHtml(this.panel.webview);
-
-        this.panel.webview.onDidReceiveMessage((message) => {
-            if (message?.type === 'prompt') {
-                callbacks.onPrompt(message.prompt);
-            }
-            if (message?.type === 'fileTool') {
-                callbacks.onFileTool(message.payload);
-            }
-            if (message?.type === 'sessions:create') {
-                callbacks.onCreateSession();
-            }
-            if (message?.type === 'sessions:switch' && typeof message.sessionId === 'string') {
-                callbacks.onSwitchSession(message.sessionId);
-            }
-            if (message?.type === 'sessions:delete' && typeof message.sessionId === 'string') {
-                callbacks.onDeleteSession(message.sessionId);
-            }
-            if (message?.type === 'model:select' && typeof message.selectionId === 'string') {
-                callbacks.onModelSelect(message.selectionId);
-            }
-            if (
-                message?.type === 'provider:apikey:set' &&
-                typeof message.providerId === 'string' &&
-                typeof message.apiKey === 'string'
-            ) {
-                callbacks.onSaveApiKey(message.providerId, message.apiKey);
-            }
-            if (
-                message?.type === 'provider:apikey:clear' &&
-                typeof message.providerId === 'string'
-            ) {
-                callbacks.onSaveApiKey(message.providerId, undefined);
-            }
-        }, undefined, this.disposables);
+        initializeCodexWebview(this.panel.webview, this.context, callbacks, this.disposables);
 
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
     }
@@ -160,14 +177,15 @@ export class CodexPanel implements vscode.Disposable {
     setLoading(value: boolean): void {
         this.panel.webview.postMessage({ type: 'loading', value });
     }
+}
 
-    private getHtml(webview: vscode.Webview): string {
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'panel.js'));
-        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.context.extensionUri, 'media', 'panel.css'));
+function getCodexHtml(webview: vscode.Webview, context: vscode.ExtensionContext): string {
+    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', 'panel.js'));
+    const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(context.extensionUri, 'media', 'panel.css'));
 
-        const cspSource = webview.cspSource;
+    const cspSource = webview.cspSource;
 
-        return /* html */ `<!DOCTYPE html>
+    return /* html */ `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
@@ -223,5 +241,4 @@ export class CodexPanel implements vscode.Disposable {
     <script src="${scriptUri}"></script>
 </body>
 </html>`;
-    }
 }

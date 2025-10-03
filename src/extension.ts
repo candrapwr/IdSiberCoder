@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import MarkdownIt from 'markdown-it';
-import { CodexPanel, PanelMessage, PanelSession } from './panels/CodexPanel';
+import { CodexPanel, PanelCallbacks, PanelMessage, PanelSession, PanelState } from './panels/CodexPanel';
+import { CodexViewProvider } from './panels/CodexViewProvider';
 import { SettingsManager, ProviderSettingsSnapshot } from './config/SettingsManager';
 import { PROVIDERS, PROVIDER_LIST, ProviderId } from './config/providers';
 import { GeneralMCPHandler } from './handlers/GeneralMCPHandler';
@@ -300,30 +301,45 @@ export async function activate(context: vscode.ExtensionContext) {
         mcp.loadConversation(activeSession.messages);
     }
 
-    const ensurePanel = () =>
-        CodexPanel.createOrShow(context, {
-            onPrompt: async (prompt: string) => {
-                await handlePrompt(prompt);
-            },
-            onFileTool: async (payload: FileToolPayload) => {
-                await handleFileTool(payload);
-            },
-            onCreateSession: () => {
-                handleCreateSession();
-            },
-            onDeleteSession: (sessionId: string) => {
-                handleDeleteSession(sessionId);
-            },
-            onSwitchSession: (sessionId: string) => {
-                handleSwitchSession(sessionId);
-            },
-            onModelSelect: (selectionId: string) => {
-                handleModelSelect(selectionId);
-            },
-            onSaveApiKey: (providerId: string, apiKey: string | undefined) => {
-                handleSaveApiKey(providerId as ProviderId, apiKey);
-            }
-        });
+    const panelCallbacks: PanelCallbacks = {
+        onPrompt: async (prompt: string) => {
+            await handlePrompt(prompt);
+        },
+        onFileTool: async (payload: FileToolPayload) => {
+            await handleFileTool(payload);
+        },
+        onCreateSession: () => {
+            handleCreateSession();
+        },
+        onDeleteSession: (sessionId: string) => {
+            handleDeleteSession(sessionId);
+        },
+        onSwitchSession: (sessionId: string) => {
+            handleSwitchSession(sessionId);
+        },
+        onModelSelect: (selectionId: string) => {
+            handleModelSelect(selectionId);
+        },
+        onSaveApiKey: (providerId: string, apiKey: string | undefined) => {
+            handleSaveApiKey(providerId as ProviderId, apiKey);
+        }
+    };
+
+    const ensurePanel = () => CodexPanel.createOrShow(context, panelCallbacks);
+
+    const viewProvider = new CodexViewProvider(context, panelCallbacks);
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(CodexViewProvider.viewType, viewProvider, {
+            webviewOptions: { retainContextWhenHidden: true }
+        }),
+        viewProvider
+    );
+
+    const ensureHostVisible = () => {
+        if (!CodexPanel.getActivePanel() && !viewProvider.isResolved()) {
+            ensurePanel();
+        }
+    };
 
     function escapeHtml(value = ''): string {
         return value
@@ -527,7 +543,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }))
         );
 
-    const buildPanelState = () => ({
+    const buildPanelState = (): PanelState => ({
         messages: renderMessagesForPanel(),
         workingDirectory: workspaceFolder,
         sessions: toPanelSessions(),
@@ -537,8 +553,34 @@ export async function activate(context: vscode.ExtensionContext) {
         activeModelOptionId: `${settings.provider}${MODEL_OPTION_SEPARATOR}${settings.providers[settings.provider]?.model}`
     });
 
-    const updatePanelState = (panel: CodexPanel) => {
-        panel.postState(buildPanelState());
+    const postStateToHosts = () => {
+        const state = buildPanelState();
+        CodexPanel.getActivePanel()?.postState(state);
+        viewProvider.postState(state);
+    };
+
+    const appendMessageToHosts = (message: ConversationMessage) => {
+        const renderable = toPanelMessage(message);
+        if (renderable) {
+            CodexPanel.getActivePanel()?.appendMessage(renderable);
+            viewProvider.appendMessage(renderable);
+        }
+    };
+
+    const postFileResultToHosts = (message: PanelMessage) => {
+        CodexPanel.getActivePanel()?.postFileResult(message);
+        viewProvider.postFileResult(message);
+    };
+
+    const setLoadingForHosts = (value: boolean) => {
+        CodexPanel.getActivePanel()?.setLoading(value);
+        viewProvider.setLoading(value);
+    };
+
+    panelCallbacks.onReady = () => {
+        viewProvider.notifyReady();
+        postStateToHosts();
+        setLoadingForHosts(false);
     };
 
     const persistActiveSession = () => {
@@ -559,26 +601,26 @@ export async function activate(context: vscode.ExtensionContext) {
     };
 
     function handleCreateSession() {
+        ensureHostVisible();
         const session = sessionManager.createSession(undefined, systemPrompt);
         mcp.loadConversation(session.messages);
-        const panel = ensurePanel();
-        panel.setLoading(false);
-        updatePanelState(panel);
+        setLoadingForHosts(false);
+        postStateToHosts();
     }
 
     function handleSwitchSession(sessionId: string) {
         if (sessionManager.getActiveSessionId() === sessionId) {
             return;
         }
+        ensureHostVisible();
         persistActiveSession();
         sessionManager.setActiveSession(sessionId);
         const session = sessionManager.getActiveSession();
         if (session) {
             mcp.loadConversation(session.messages);
         }
-        const panel = ensurePanel();
-        panel.setLoading(false);
-        updatePanelState(panel);
+        setLoadingForHosts(false);
+        postStateToHosts();
     }
 
     function handleDeleteSession(sessionId: string) {
@@ -591,9 +633,9 @@ export async function activate(context: vscode.ExtensionContext) {
         if (session) {
             mcp.loadConversation(session.messages);
         }
-        const panel = ensurePanel();
-        panel.setLoading(false);
-        updatePanelState(panel);
+        ensureHostVisible();
+        setLoadingForHosts(false);
+        postStateToHosts();
     }
 
     async function handleModelSelect(selectionId: string) {
@@ -641,9 +683,9 @@ export async function activate(context: vscode.ExtensionContext) {
             await settingsManager.updateModel(providerId, modelId);
         }
         await refreshSettings();
-        const panel = ensurePanel();
-        panel.setLoading(false);
-        updatePanelState(panel);
+        ensureHostVisible();
+        setLoadingForHosts(false);
+        postStateToHosts();
     }
 
     async function handleSaveApiKey(providerId: ProviderId, apiKey?: string) {
@@ -661,17 +703,10 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         await refreshSettings();
-        const panel = ensurePanel();
-        panel.setLoading(false);
-        updatePanelState(panel);
+        ensureHostVisible();
+        setLoadingForHosts(false);
+        postStateToHosts();
     }
-
-    const sendPanelMessage = (panel: CodexPanel, message: ConversationMessage) => {
-        const renderable = toPanelMessage(message);
-        if (renderable) {
-            panel.appendMessage(renderable);
-        }
-    };
 
     const isFileOperationResult = (value: unknown): value is FileOperationResult => {
         if (!value || typeof value !== 'object') {
@@ -804,12 +839,12 @@ export async function activate(context: vscode.ExtensionContext) {
         return { conversationText, panelMessage };
     };
 
-    async function processOutcome(outcome: PromptOutcome, panel: CodexPanel) {
+    async function processOutcome(outcome: PromptOutcome) {
         let currentOutcome: PromptOutcome | null = outcome;
 
         while (currentOutcome) {
-            sendPanelMessage(panel, currentOutcome.message);
-            updatePanelState(panel);
+            appendMessageToHosts(currentOutcome.message);
+            postStateToHosts();
             persistActiveSession();
 
             const toolCalls = getToolCalls(currentOutcome);
@@ -837,7 +872,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
                 const { conversationText } = buildToolOutputs(normalizedAction, result);
                 mcp.addToolResult(normalizedAction, conversationText, call?.id);
-                updatePanelState(panel);
+                postStateToHosts();
                 persistActiveSession();
             }
 
@@ -845,8 +880,8 @@ export async function activate(context: vscode.ExtensionContext) {
                 currentOutcome = await mcp.continueAfterTool();
             } catch (error) {
                 const friendly = error instanceof Error ? error.message : String(error);
-                sendPanelMessage(panel, { role: 'assistant', content: `❌ ${friendly}` });
-                updatePanelState(panel);
+                appendMessageToHosts({ role: 'assistant', content: `❌ ${friendly}` });
+                postStateToHosts();
                 persistActiveSession();
                 currentOutcome = null;
             }
@@ -855,21 +890,21 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     async function handlePrompt(prompt: string) {
-        const panel = ensurePanel();
-        panel.setLoading(true);
+        ensureHostVisible();
+        setLoadingForHosts(true);
         try {
             const outcome = await mcp.handlePrompt(prompt);
-            await processOutcome(outcome, panel);
+            await processOutcome(outcome);
         } finally {
-            panel.setLoading(false);
+            setLoadingForHosts(false);
         }
     }
 
     async function handleFileTool(payload: FileToolPayload) {
-        const panel = ensurePanel();
+        ensureHostVisible();
         const action = fileToolAlias[payload.action] ?? payload.action;
 
-        panel.setLoading(true);
+        setLoadingForHosts(true);
         try {
             const params = ensureToolParameters(action, {
                 file_path: payload.path,
@@ -881,10 +916,10 @@ export async function activate(context: vscode.ExtensionContext) {
             });
             const result = await executeFileTool(action, params);
             const { panelMessage } = buildToolOutputs(action, result);
-            panel.postFileResult(panelMessage);
+            postFileResultToHosts(panelMessage);
         } catch (error: unknown) {
             const friendly = error instanceof Error ? error.message : String(error);
-            panel.postFileResult({
+            postFileResultToHosts({
                 role: 'tool',
                 content: friendly,
                 html: markdown.render(friendly),
@@ -892,18 +927,18 @@ export async function activate(context: vscode.ExtensionContext) {
                 success: false
             });
         } finally {
-            panel.setLoading(false);
+            setLoadingForHosts(false);
         }
     }
 
     const openPanelDisposable = vscode.commands.registerCommand('idSiberCoder.openPanel', () => {
-        const panel = ensurePanel();
-        updatePanelState(panel);
+        ensurePanel();
+        postStateToHosts();
     });
 
     const sendPromptDisposable = vscode.commands.registerCommand('idSiberCoder.sendPrompt', async () => {
-        const panel = ensurePanel();
-        updatePanelState(panel);
+        ensurePanel();
+        postStateToHosts();
         const prompt = await vscode.window.showInputBox({ prompt: 'Send prompt to IdSiberCoder' });
         if (prompt) {
             await handlePrompt(prompt);
@@ -921,8 +956,8 @@ export async function activate(context: vscode.ExtensionContext) {
         sessionManager.setDefaultSystemPrompt(systemPrompt);
         mcp.updateSystemPrompt(systemPrompt);
         persistActiveSession();
-        const panel = ensurePanel();
-        updatePanelState(panel);
+        ensureHostVisible();
+        postStateToHosts();
     });
 
     const configWatcher = vscode.workspace.onDidChangeConfiguration(async (event) => {
@@ -945,8 +980,8 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         persistActiveSession();
-        const panel = ensurePanel();
-        updatePanelState(panel);
+        ensureHostVisible();
+        postStateToHosts();
     });
 
     context.subscriptions.push(
@@ -958,8 +993,8 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     if (workspaceFolder) {
-        const panel = ensurePanel();
-        updatePanelState(panel);
+        ensureHostVisible();
+        postStateToHosts();
     } else {
         vscode.window.showInformationMessage('Open a workspace folder to enable IdSiberCoder file tools.');
     }
