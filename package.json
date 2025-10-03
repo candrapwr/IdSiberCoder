@@ -7,6 +7,14 @@
   "engines": {
     "vscode": "^1.85.0"
   },
+  "homepage": "https://github.com/candrapwr/IdSiberCoder",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/candrapwr/IdSiberCoder.git"
+  },
+  "bugs": {
+    "url": "https://github.com/candrapwr/IdSiberCoder/issues"
+  },
   "categories": [
     "Other",
     "AI"

@@ -37,6 +37,8 @@ IdSiberCoder is the VS Code companion app for the IdSiber ecosystem. Install it 
 
 Issues, ideas, and pull requests are welcome. This project is still evolving—feel free to share feedback or reach out to the IdSiber team if you’d like to collaborate.
 
+Prefer a direct line? Email candrapwr@datasiber.com.
+
 Looking for architecture notes and implementation details? Check out [`DEVELOPMENT.md`](DEVELOPMENT.md).
 
 ## License
