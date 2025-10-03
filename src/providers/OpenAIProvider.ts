@@ -15,7 +15,7 @@ export class OpenAIProvider implements ChatProvider {
     constructor(private readonly config: OpenAIConfig) {
         this.client = axios.create({
             baseURL: config.baseUrl.replace(/\/$/, ''),
-            timeout: 60000
+            timeout: 300000
         });
     }
 

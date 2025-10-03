@@ -31,7 +31,7 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultModel: 'gpt-4o-mini',
         models: [
             { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
-            { id: 'codex', label: 'Codex' }
+            { id: 'gpt-5-nano', label: 'GPT-5 nano' }
         ]
     }
 };

@@ -260,7 +260,7 @@ export class ContextManager implements Disposable {
 
         const summaryMessage: ConversationMessage = {
             role: 'assistant',
-            content: `${this.summaryPrefix}\n${this.summaryLines.join('\n')}`.trim()
+            content: this.formatSummaryContent()
         };
 
         return {
@@ -295,9 +295,13 @@ export class ContextManager implements Disposable {
         if (!candidate) {
             return;
         }
-        const lines = candidate.content
+        const marker = `${this.summaryPrefix}\n`;
+        const raw = candidate.content.startsWith(marker)
+            ? candidate.content.slice(marker.length)
+            : candidate.content;
+
+        const lines = raw
             .split('\n')
-            .slice(1)
             .map((line) => line.trim())
             .filter(Boolean);
         if (!lines.length) {
@@ -305,5 +309,10 @@ export class ContextManager implements Disposable {
         }
         this.summaryLines = lines;
         this.summaryHashes = new Set(lines.map((line) => this.hashSummary(line)));
+    }
+
+    private formatSummaryContent(): string {
+        const header = this.summaryPrefix.endsWith(':') ? this.summaryPrefix : `${this.summaryPrefix}:`;
+        return `${header}\n${this.summaryLines.join('\n')}`;
     }
 }

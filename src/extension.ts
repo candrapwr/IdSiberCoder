@@ -39,6 +39,7 @@ const fileToolAlias: Record<string, string> = {
 };
 
 const markdown = new MarkdownIt({ html: false, linkify: true, breaks: true });
+const CONTEXT_SUMMARY_PREFIX = 'Context summary (auto-generated)';
 
 const ensureString = (value: unknown, field: string): string => {
     if (typeof value === 'string' && value.trim().length > 0) {
@@ -333,7 +334,44 @@ export async function activate(context: vscode.ExtensionContext) {
             .replace(/'/g, '&#039;');
     }
 
+    const renderContextSummaryHtml = (raw: string) => {
+        const lines = raw
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+        if (!lines.length) {
+            return escapeHtml(raw);
+        }
+
+        const [header, ...rest] = lines;
+        const items = rest.map((line) => {
+            const normalized = line.replace(/^•\s*/, '').trim();
+            return `<li>${escapeHtml(normalized)}</li>`;
+        });
+
+        const bodyContent = items.length
+            ? `<ul class="context-summary-list">${items.join('')}</ul>`
+            : '<div class="context-summary-empty">No summary captured yet.</div>';
+
+        return `
+            <details class="context-summary" data-collapsible>
+                <summary>${escapeHtml(header)}</summary>
+                ${bodyContent}
+            </details>
+        `.trim();
+    };
+
     const formatAssistantHtml = (raw: string, toolCalls?: ToolFunctionCall[]) => {
+        const trimmedRaw = raw.trim();
+        if (trimmedRaw.startsWith(CONTEXT_SUMMARY_PREFIX)) {
+            return {
+                role: 'assistant' as PanelMessage['role'],
+                content: raw,
+                html: renderContextSummaryHtml(raw)
+            };
+        }
+
         const lines = raw.split(/\r?\n/);
         const thinkLines: string[] = [];
         const responseLines: string[] = [];

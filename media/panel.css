@@ -787,3 +787,51 @@ button {
 button:hover {
     filter: brightness(1.07);
 }
+
+details.context-summary {
+    margin-top: 0.35rem;
+    border: 1px solid rgba(120, 140, 170, 0.35);
+    border-radius: 8px;
+    background: rgba(20, 24, 32, 0.6);
+    padding: 0.4rem 0.6rem;
+}
+
+details.context-summary > summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: rgba(210, 220, 240, 0.85);
+    list-style: none;
+}
+
+details.context-summary > summary::-webkit-details-marker {
+    display: none;
+}
+
+details.context-summary > summary::before {
+    content: '\25B6';
+    display: inline-block;
+    margin-right: 0.4rem;
+    transition: transform 0.15s ease;
+}
+
+details.context-summary[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.context-summary-list {
+    margin: 0.5rem 0 0;
+    padding-left: 1.2rem;
+    color: rgba(200, 210, 230, 0.85);
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.context-summary-list li {
+    margin-bottom: 0.25rem;
+}
+
+.context-summary-empty {
+    margin: 0.5rem 0 0;
+    color: rgba(170, 180, 200, 0.7);
+    font-size: 0.75rem;
+}
