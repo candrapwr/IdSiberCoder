@@ -223,6 +223,8 @@ const buildTooling = (fileManager: FileManager): Tooling => {
 };
 
 export async function activate(context: vscode.ExtensionContext) {
+    console.log('Congratulations, your extension "idsibercoder" is now active!');
+
     const settingsManager = new SettingsManager(context.secrets);
     let settings = await settingsManager.getSettings();
 
@@ -896,10 +898,22 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     }
 
-    const openPanelDisposable = vscode.commands.registerCommand('idSiberCoder.openPanel', () => {
+    // Register an empty tree data provider for our sidebar view
+    // This allows the view to be shown, and our menu contribution will add the button.
+    const treeDataProvider = {
+        getChildren: () => Promise.resolve([]),
+        getTreeItem: (element: never) => element
+    };
+    context.subscriptions.push(
+        vscode.window.createTreeView('idSiberCoder.actions', { treeDataProvider })
+    );
+
+    let disposable = vscode.commands.registerCommand('idSiberCoder.openPanel', () => {
         const panel = ensurePanel();
         updatePanelState(panel);
     });
+
+    context.subscriptions.push(disposable);
 
     const sendPromptDisposable = vscode.commands.registerCommand('idSiberCoder.sendPrompt', async () => {
         const panel = ensurePanel();
@@ -950,7 +964,6 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(
-        openPanelDisposable,
         sendPromptDisposable,
         workspaceWatcher,
         configWatcher,

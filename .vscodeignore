@@ -1,7 +1,10 @@
 .vscode/**
 .vscode-test/**
-out/test/**
-.git/**
+src/**
+esbuild.config.mjs
 node_modules/**
-**/*.ts
-**/*.map
+.eslintrc.json
+tsconfig.json
+npm-shrinkwrap.json
+yarn.lock
+pnpm-lock.yaml

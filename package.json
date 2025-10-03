@@ -29,8 +29,9 @@
     "commands": [
       {
         "command": "idSiberCoder.openPanel",
-        "title": "IdSiberCoder: Open Assistant",
-        "category": "IdSiberCoder"
+        "title": "IdSiberCoder: Open Panel",
+        "category": "IdSiberCoder",
+        "icon": "$(new-window)"
       },
       {
         "command": "idSiberCoder.sendPrompt",
@@ -38,6 +39,32 @@
         "category": "IdSiberCoder"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "idSiberCoder-sidebar",
+          "title": "IdSiberCoder",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "idSiberCoder-sidebar": [
+        {
+          "id": "idSiberCoder.actions",
+          "name": "Actions"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "idSiberCoder.openPanel",
+          "when": "view == idSiberCoder.actions",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "title": "IdSiberCoder",
       "properties": {
@@ -91,10 +118,11 @@
     }
   },
   "scripts": {
-    "compile": "tsc -p ./",
-    "watch": "tsc -w -p ./",
-    "pretest": "npm run compile",
-    "test": "node ./out/test/runTests.js"
+    "vscode:prepublish": "npm run package",
+    "compile": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "package": "npm run compile",
+    "lint": "eslint src --ext ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
@@ -102,10 +130,15 @@
     "@types/markdown-it": "^13.0.6",
     "typescript": "^5.4.5",
     "tslib": "^2.6.2",
-    "@vscode/test-electron": "^2.3.6"
+    "@vscode/test-electron": "^2.3.6",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "esbuild": "^0.19.11"
   },
   "dependencies": {
     "axios": "^1.6.8",
     "markdown-it": "^13.0.1"
   }
 }
+
