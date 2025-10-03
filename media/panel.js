@@ -44,12 +44,6 @@ const ROLE_LABELS = {
     tool: 'Tool'
 };
 
-const MARKER_ICONS = {
-    user: '',
-    assistant: '',
-    tool: ''
-};
-
 const renderMessage = (message, index, total) => {
     const container = document.createElement('article');
     container.className = 'timeline-entry';
@@ -61,18 +55,6 @@ const renderMessage = (message, index, total) => {
     if (index === total - 1) {
         container.classList.add('is-last');
     }
-
-    const marker = document.createElement('div');
-    marker.className = 'timeline-marker';
-    marker.dataset.role = message.role;
-    marker.dataset.icon = MARKER_ICONS[message.role] ?? '';
-
-    if (message.role === 'tool' && message.success === false) {
-        marker.dataset.status = 'failed';
-        marker.dataset.icon = '!';
-    }
-
-    container.appendChild(marker);
 
     const card = document.createElement('div');
     card.className = 'timeline-card';
@@ -141,15 +123,11 @@ const renderHistory = () => {
 const renderLoadingEntry = (isFirstEntry) => {
     const container = document.createElement('article');
     container.className = 'timeline-entry timeline-loading';
+    container.dataset.role = 'loading';
     if (isFirstEntry) {
         container.classList.add('is-first');
     }
     container.classList.add('is-last');
-
-    const marker = document.createElement('div');
-    marker.className = 'timeline-marker';
-    marker.dataset.role = 'loading';
-    container.appendChild(marker);
 
     const card = document.createElement('div');
     card.className = 'timeline-card timeline-card-loading';
