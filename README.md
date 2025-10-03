@@ -7,6 +7,7 @@ IdSiberCoder is the VS Code companion app for the IdSiber ecosystem. Install it 
 - **Chat-first workflow** – open the IdSiberCoder panel and talk to your assistant like a coding partner.
 - **Workspace aware** – read, edit, append, delete, move, or copy files in the currently opened folder (with safe guards).
 - **DeepSeek superpowers** – leverages DeepSeek’s function-calling API to trigger tools automatically and narrate the results.
+- **Session juggling** – hop across previous conversations, create fresh ones, or prune old threads without leaving the sidebar.
 - **Smart context** – keeps long sessions tidy by summarising older turns and only replaying the essentials.
 - **Clean timeline** – assistant thoughts, tool calls, and outputs are rendered in a collapsible, easy-to-scan history.
 
@@ -16,7 +17,7 @@ IdSiberCoder is the VS Code companion app for the IdSiber ecosystem. Install it 
 2. Open the folder in VS Code and hit **F5** to launch the Extension Development Host.
 3. Run the command **IdSiberCoder: Open Assistant**.
 4. Enter your DeepSeek API key when prompted (or set it under Extension Settings).
-5. Start chatting—try asking the assistant to inspect or edit a file in your workspace.
+5. Start chatting—try asking the assistant to inspect or edit a file in your workspace. Use the sessions icon in the panel header to revisit, rename, or delete earlier threads.
 
 ## Why you might love it
 
@@ -34,6 +35,8 @@ IdSiberCoder is the VS Code companion app for the IdSiber ecosystem. Install it 
 ## Contributing
 
 Issues, ideas, and pull requests are welcome. This project is still evolving—feel free to share feedback or reach out to the IdSiber team if you’d like to collaborate.
+
+Looking for architecture notes and implementation details? Check out [`DEVELOPMENT.md`](DEVELOPMENT.md).
 
 ## License
 

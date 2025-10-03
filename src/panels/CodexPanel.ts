@@ -10,6 +10,9 @@ export interface FileToolHandler {
 export interface PanelCallbacks {
     onPrompt: PromptHandler;
     onFileTool: FileToolHandler;
+    onCreateSession: () => void;
+    onDeleteSession: (sessionId: string) => void;
+    onSwitchSession: (sessionId: string) => void;
 }
 
 export type PanelRole = 'user' | 'assistant' | 'tool';
@@ -26,6 +29,15 @@ export interface PanelMessage {
 export interface PanelState {
     messages: PanelMessage[];
     workingDirectory?: string;
+    sessions: PanelSession[];
+    activeSessionId?: string;
+}
+
+export interface PanelSession {
+    id: string;
+    title: string;
+    createdAt: number;
+    updatedAt: number;
 }
 
 export class CodexPanel implements vscode.Disposable {
@@ -75,6 +87,15 @@ export class CodexPanel implements vscode.Disposable {
             if (message?.type === 'fileTool') {
                 callbacks.onFileTool(message.payload);
             }
+            if (message?.type === 'sessions:create') {
+                callbacks.onCreateSession();
+            }
+            if (message?.type === 'sessions:switch' && typeof message.sessionId === 'string') {
+                callbacks.onSwitchSession(message.sessionId);
+            }
+            if (message?.type === 'sessions:delete' && typeof message.sessionId === 'string') {
+                callbacks.onDeleteSession(message.sessionId);
+            }
         }, undefined, this.disposables);
 
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
@@ -122,14 +143,27 @@ export class CodexPanel implements vscode.Disposable {
 </head>
 <body>
     <header class="header">
-        <div class="title">IdSiberCoder</div>
-        <div class="workspace" id="workspaceLabel">Workspace: unknown</div>
+        <div class="header-row">
+            <div class="title">IdSiberCoder</div>
+            <div class="workspace" id="workspaceLabel">Workspace: unknown</div>
+            <div class="header-actions">
+                <button class="header-icon" id="sessionToggle" title="Sessions" aria-label="Sessions">☰</button>
+            </div>
+        </div>
     </header>
-    <section class="history" id="history"></section>
-    <div class="loading hidden" id="loadingIndicator">
-        <div class="spinner"></div>
-        <span>Processing…</span>
+    <div class="sessions-overlay hidden" id="sessionsOverlay" role="dialog" aria-modal="true">
+        <div class="sessions-panel">
+            <div class="sessions-panel-header">
+                <div class="sessions-panel-title">Chat Sessions</div>
+                <div class="sessions-panel-actions">
+                    <button class="sessions-new" id="sessionsCreate" aria-label="New session">New</button>
+                    <button class="sessions-close" id="sessionsClose" aria-label="Close sessions">×</button>
+                </div>
+            </div>
+            <div class="sessions-panel-list" id="sessionsPanelList"></div>
+        </div>
     </div>
+    <section class="history" id="history"></section>
     <section class="composer">
         <textarea id="prompt" rows="3" placeholder="Ask IdSiberCoder..."></textarea>
         <div class="actions">

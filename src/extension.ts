@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import MarkdownIt from 'markdown-it';
-import { CodexPanel, PanelMessage } from './panels/CodexPanel';
+import { CodexPanel, PanelMessage, PanelSession } from './panels/CodexPanel';
 import { SettingsManager } from './config/SettingsManager';
 import { GeneralMCPHandler } from './handlers/GeneralMCPHandler';
 import { ToolRegistry } from './handlers/ToolCallHandler';
@@ -8,6 +8,8 @@ import { FileManager, FileOperationResult } from './tools/FileManager';
 import { DeepSeekProvider, ToolDefinition } from './providers/DeepSeekProvider';
 import type { PromptOutcome } from './handlers/GeneralMCPHandler';
 import type { ConversationMessage, MessageUsage, ToolFunctionCall } from './context/ContextManager';
+import { SessionManager } from './handlers/SessionManager';
+import type { SessionSummary } from './handlers/SessionManager';
 
 const SYSTEM_PROTOCOL = `# IdSiberCoder Guidelines
 
@@ -256,8 +258,10 @@ export async function activate(context: vscode.ExtensionContext) {
         return cachedProvider;
     };
 
+    let systemPrompt = buildSystemPrompt(workspaceFolder);
+
     const mcp = new GeneralMCPHandler({
-        systemPrompt: buildSystemPrompt(workspaceFolder),
+        systemPrompt,
         tools: toolRegistry,
         toolDefinitions,
         providerFactory,
@@ -268,6 +272,13 @@ export async function activate(context: vscode.ExtensionContext) {
         }
     });
 
+    const sessionManager = new SessionManager(context.workspaceState);
+    sessionManager.setDefaultSystemPrompt(systemPrompt);
+    const activeSession = sessionManager.ensureBootstrapped();
+    if (activeSession) {
+        mcp.loadConversation(activeSession.messages);
+    }
+
     const ensurePanel = () =>
         CodexPanel.createOrShow(context, {
             onPrompt: async (prompt: string) => {
@@ -275,6 +286,15 @@ export async function activate(context: vscode.ExtensionContext) {
             },
             onFileTool: async (payload: FileToolPayload) => {
                 await handleFileTool(payload);
+            },
+            onCreateSession: () => {
+                handleCreateSession();
+            },
+            onDeleteSession: (sessionId: string) => {
+                handleDeleteSession(sessionId);
+            },
+            onSwitchSession: (sessionId: string) => {
+                handleSwitchSession(sessionId);
             }
         });
 
@@ -311,6 +331,30 @@ export async function activate(context: vscode.ExtensionContext) {
 
         const htmlParts: string[] = [];
 
+        const renderToolCallSegment = (label: string, rawArgs: string) => {
+            let renderedContent = '<div class="assistant-toolcall-empty">Tidak ada parameter</div>';
+
+            if (rawArgs && rawArgs.trim()) {
+                try {
+                    const parsed = JSON.parse(rawArgs);
+                    renderedContent = `<pre class="assistant-toolcall-json">${escapeHtml(
+                        JSON.stringify(parsed, null, 2)
+                    )}</pre>`;
+                } catch (error) {
+                    renderedContent = `<pre class="assistant-toolcall-json">${escapeHtml(rawArgs)}</pre>`;
+                }
+            }
+
+            return `<div class="assistant-segment assistant-toolcall">
+                <details class="assistant-toolcall-card">
+                    <summary>
+                        <span class="assistant-toolcall-title">${escapeHtml(label)}</span>
+                    </summary>
+                    <div class="assistant-toolcall-body">${renderedContent}</div>
+                </details>
+            </div>`;
+        };
+
         if (thinkLines.length) {
             htmlParts.push(
                 `<div class="assistant-segment assistant-think"><span class="assistant-chip">Think</span>${markdown.render(thinkLines.join('\n'))}</div>`
@@ -321,32 +365,10 @@ export async function activate(context: vscode.ExtensionContext) {
             for (const call of toolCalls ?? []) {
                 const name = call?.function?.name ?? 'tool_call';
                 const rawArgs = call?.function?.arguments ?? '';
-                let toolHtml = escapeHtml(rawArgs);
-                if (rawArgs) {
-                    try {
-                        const parsed = JSON.parse(rawArgs);
-                        toolHtml = `<pre>${escapeHtml(JSON.stringify(parsed, null, 2))}</pre>`;
-                    } catch (error) {
-                        toolHtml = `<pre>${escapeHtml(rawArgs)}</pre>`;
-                    }
-                }
-                htmlParts.push(
-                    `<div class="assistant-segment assistant-toolcall"><span class="assistant-chip">Tool Call • ${escapeHtml(
-                        name
-                    )}</span>${toolHtml}</div>`
-                );
+                htmlParts.push(renderToolCallSegment(`Tool • ${name}`, rawArgs ?? ''));
             }
         } else if (toolCallPayload) {
-            let toolHtml = escapeHtml(toolCallPayload);
-            try {
-                const parsed = JSON.parse(toolCallPayload);
-                toolHtml = `<pre>${escapeHtml(JSON.stringify(parsed, null, 2))}</pre>`;
-            } catch (error) {
-                toolHtml = `<pre>${escapeHtml(toolCallPayload)}</pre>`;
-            }
-            htmlParts.push(
-                `<div class="assistant-segment assistant-toolcall"><span class="assistant-chip">Tool Call</span>${toolHtml}</div>`
-            );
+            htmlParts.push(renderToolCallSegment('Tool Call', toolCallPayload));
         }
 
         if (responseLines.length) {
@@ -413,14 +435,70 @@ export async function activate(context: vscode.ExtensionContext) {
             .map((entry) => toPanelMessage(entry))
             .filter((message): message is PanelMessage => message !== null);
 
+    const toPanelSessions = (): PanelSession[] =>
+        sessionManager.getSessionSummaries().map((session: SessionSummary) => ({
+            id: session.id,
+            title: session.title,
+            createdAt: session.createdAt,
+            updatedAt: session.updatedAt
+        }));
+
     const buildPanelState = () => ({
         messages: renderMessagesForPanel(),
-        workingDirectory: workspaceFolder
+        workingDirectory: workspaceFolder,
+        sessions: toPanelSessions(),
+        activeSessionId: sessionManager.getActiveSessionId()
     });
 
     const updatePanelState = (panel: CodexPanel) => {
         panel.postState(buildPanelState());
     };
+
+    const persistActiveSession = () => {
+        const sessionId = sessionManager.getActiveSessionId();
+        if (!sessionId) {
+            return;
+        }
+        sessionManager.updateSessionMessages(sessionId, mcp.getConversation());
+    };
+
+    function handleCreateSession() {
+        const session = sessionManager.createSession(undefined, systemPrompt);
+        mcp.loadConversation(session.messages);
+        const panel = ensurePanel();
+        panel.setLoading(false);
+        updatePanelState(panel);
+    }
+
+    function handleSwitchSession(sessionId: string) {
+        if (sessionManager.getActiveSessionId() === sessionId) {
+            return;
+        }
+        persistActiveSession();
+        sessionManager.setActiveSession(sessionId);
+        const session = sessionManager.getActiveSession();
+        if (session) {
+            mcp.loadConversation(session.messages);
+        }
+        const panel = ensurePanel();
+        panel.setLoading(false);
+        updatePanelState(panel);
+    }
+
+    function handleDeleteSession(sessionId: string) {
+        const isActive = sessionManager.getActiveSessionId() === sessionId;
+        if (isActive) {
+            persistActiveSession();
+        }
+        sessionManager.deleteSession(sessionId);
+        const session = sessionManager.getActiveSession();
+        if (session) {
+            mcp.loadConversation(session.messages);
+        }
+        const panel = ensurePanel();
+        panel.setLoading(false);
+        updatePanelState(panel);
+    }
 
     const sendPanelMessage = (panel: CodexPanel, message: ConversationMessage) => {
         const renderable = toPanelMessage(message);
@@ -566,6 +644,7 @@ export async function activate(context: vscode.ExtensionContext) {
         while (currentOutcome) {
             sendPanelMessage(panel, currentOutcome.message);
             updatePanelState(panel);
+            persistActiveSession();
 
             const toolCalls = getToolCalls(currentOutcome);
             if (!toolCalls?.length) {
@@ -593,6 +672,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 const { conversationText } = buildToolOutputs(normalizedAction, result);
                 mcp.addToolResult(normalizedAction, conversationText, call?.id);
                 updatePanelState(panel);
+                persistActiveSession();
             }
 
             try {
@@ -601,9 +681,11 @@ export async function activate(context: vscode.ExtensionContext) {
                 const friendly = error instanceof Error ? error.message : String(error);
                 sendPanelMessage(panel, { role: 'assistant', content: `❌ ${friendly}` });
                 updatePanelState(panel);
+                persistActiveSession();
                 currentOutcome = null;
             }
         }
+        persistActiveSession();
     }
 
     async function handlePrompt(prompt: string) {
@@ -669,7 +751,10 @@ export async function activate(context: vscode.ExtensionContext) {
         toolRegistry = tooling.registry;
         toolDefinitions = tooling.definitions;
         mcp.updateTools(toolRegistry, toolDefinitions);
-        mcp.updateSystemPrompt(buildSystemPrompt(workspaceFolder));
+        systemPrompt = buildSystemPrompt(workspaceFolder);
+        sessionManager.setDefaultSystemPrompt(systemPrompt);
+        mcp.updateSystemPrompt(systemPrompt);
+        persistActiveSession();
         const panel = ensurePanel();
         updatePanelState(panel);
     });
@@ -688,6 +773,8 @@ export async function activate(context: vscode.ExtensionContext) {
             summaryRetention: settings.contextSummaryRetention
         });
         mcp.resetConversation();
+        sessionManager.setDefaultSystemPrompt(systemPrompt);
+        persistActiveSession();
         const panel = ensurePanel();
         updatePanelState(panel);
     });

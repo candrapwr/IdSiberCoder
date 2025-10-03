@@ -7,9 +7,9 @@ This document captures the technical shape of the IdSiberCoder extension so futu
 ```
 idSiberCoder/
 ├── src/
-│   ├── extension.ts            # Entry point – wires VS Code APIs to the MCP-style flow
+│   ├── extension.ts            # Entry point – wires VS Code APIs to the MCP-style flow + session sync
 │   ├── context/                # Conversation optimisation utilities
-│   ├── handlers/               # MCP-inspired coordinators (conversation, request, logging, tools)
+│   ├── handlers/               # MCP-inspired coordinators (conversation, request, logging, tools, sessions)
 │   ├── panels/                 # Webview shell for the chat experience
 │   ├── providers/              # DeepSeek client wrapper
 │   └── tools/                  # Workspace file operations consumed by the tool layer
@@ -23,9 +23,10 @@ idSiberCoder/
 
 - **GeneralMCPHandler** mirrors the CLI app’s MCP core: it initialises conversation state, manages tool registries, and feeds DeepSeek responses back into the loop.
 - **RequestHandler** prepares the request payload, forwards the current transcript plus tool definitions to DeepSeek, and captures function-call output.
-- **ConversationHandler** keeps the running transcript, applies context optimisation, and records tool results as `role: "tool"` messages so DeepSeek can chain calls.
+- **ConversationHandler** keeps the running transcript, applies context optimisation, records tool results as `role: "tool"` messages, and can reload saved histories when switching sessions.
+- **SessionManager** persists chat threads in `workspaceState`, derives human-readable titles, and swaps conversation state when users pick a different session.
 - **DeepSeekProvider** speaks directly to `/chat/completions`, sending structured tool definitions and unpacking returned tool calls (`tool_calls`) and usage/token stats.
-- **Webview Panel** renders assistant replies, token badges, and collapsible tool outputs; it also exposes loading state back to the extension while requests are in flight.
+- **Webview Panel** renders assistant replies, token badges, collapsible tool outputs, and a dedicated sessions overlay for creating, switching, or deleting chats; it also exposes loading state back to the extension while requests are in flight.
 
 ## Tool Definitions
 
@@ -70,4 +71,3 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 - Additional providers can slot in by extending `DeepSeekProvider` or introducing a provider interface in `GeneralMCPHandler`.
 - Persisting conversation history or wiring context summaries into storage can reuse the CLI project’s session manager patterns.
 - The webview currently renders Markdown via `markdown-it`; theming can be extended with CSS variables exposed by VS Code.
-

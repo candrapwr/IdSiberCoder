@@ -36,6 +36,22 @@ export class ConversationHandler {
         this.history.push({ role: 'tool', content, name: toolName, toolCallId });
     }
 
+    load(history: ConversationMessage[], fallbackSystemPrompt: string): void {
+        this.optimizer.reset();
+
+        if (!history.length || history[0].role !== 'system') {
+            this.history = [];
+            this.initialize(fallbackSystemPrompt);
+            return;
+        }
+
+        this.history = history.map((message) => ({ ...message }));
+        const result = this.optimizer.optimize(this.history);
+        if (result.optimized) {
+            this.history = result.messages;
+        }
+    }
+
     getHistory(): ConversationMessage[] {
         return [...this.history];
     }

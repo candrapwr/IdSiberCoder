@@ -105,6 +105,10 @@ export class GeneralMCPHandler {
         return this.conversationHandler.getHistory();
     }
 
+    loadConversation(history: ConversationMessage[]): void {
+        this.conversationHandler.load(history, this.systemPrompt);
+    }
+
     resetConversation(): void {
         this.conversationHandler.reset(this.systemPrompt);
     }
