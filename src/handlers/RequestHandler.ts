@@ -2,6 +2,7 @@ import type { ConversationMessage, MessageUsage, ToolFunctionCall } from '../con
 import type { ConversationHandler } from './ConversationHandler';
 import type { ProviderResponse, ToolDefinition, ChatProvider } from '../providers/types';
 import { LoggingHandler } from './LoggingHandler';
+import * as vscode from 'vscode';
 
 export type ProviderFactory = () => Promise<ChatProvider>;
 
@@ -25,14 +26,14 @@ export class RequestHandler {
         this.toolDefinitions = tools;
     }
 
-    async handle(prompt: string): Promise<PromptResult> {
+    async handle(prompt: string, cancelToken?: vscode.CancellationToken): Promise<PromptResult> {
         this.conversationHandler.addUserMessage(prompt);
         const optimized = this.conversationHandler.optimize();
 
         const provider = await this.providerFactory();
         this.logger.info('Dispatching prompt to provider', { tokenCount: optimized.messages.length });
 
-        const response: ProviderResponse = await provider.sendChat(optimized.messages, this.toolDefinitions);
+        const response: ProviderResponse = await provider.sendChat(optimized.messages, this.toolDefinitions, cancelToken);
         this.conversationHandler.addAssistantMessage(
             response.message.content,
             response.usage,
@@ -48,14 +49,14 @@ export class RequestHandler {
         };
     }
 
-    async continueConversation(): Promise<PromptResult> {
+    async continueConversation(cancelToken?: vscode.CancellationToken): Promise<PromptResult> {
         const optimized = this.conversationHandler.optimize();
         const provider = await this.providerFactory();
         this.logger.info('Continuing conversation after tool result', {
             tokenCount: optimized.messages.length
         });
 
-        const response: ProviderResponse = await provider.sendChat(optimized.messages, this.toolDefinitions);
+        const response: ProviderResponse = await provider.sendChat(optimized.messages, this.toolDefinitions, cancelToken);
         this.conversationHandler.addAssistantMessage(
             response.message.content,
             response.usage,

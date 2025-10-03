@@ -17,6 +17,7 @@ export interface PanelCallbacks {
     onSaveApiKey: (providerId: string, apiKey: string | undefined) => void;
     onReady?: () => void;
     onOpenPanel?: () => void;
+    onStopProcess?: () => void;
 }
 
 export type PanelRole = 'user' | 'assistant' | 'tool';
@@ -136,6 +137,9 @@ export class CodexPanel implements vscode.Disposable {
             if (message?.type === 'openPanel') {
                 callbacks.onOpenPanel?.();
             }
+            if (message?.type === 'stopProcess') {
+                callbacks.onStopProcess?.();
+            }
         }, undefined, this.disposables);
 
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
@@ -168,6 +172,10 @@ export class CodexPanel implements vscode.Disposable {
 
     postFileResult(message: PanelMessage): void {
         this.panel.webview.postMessage({ type: 'fileResult', message });
+    }
+
+    postProcessStopped(): void {
+        this.panel.webview.postMessage({ type: 'processStopped' });
     }
 
     setLoading(value: boolean): void {

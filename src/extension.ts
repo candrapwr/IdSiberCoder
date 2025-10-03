@@ -332,6 +332,22 @@ export async function activate(context: vscode.ExtensionContext) {
         },
         onOpenPanel: () => {
             vscode.commands.executeCommand('idSiberCoder.openPanel');
+        },
+        onStopProcess: () => {
+            if (currentProcessController) {
+                currentProcessController.cancel();
+                currentProcessController = undefined;
+                if (currentCancellationTokenSource) {
+                    currentCancellationTokenSource.cancel();
+                    currentCancellationTokenSource = undefined;
+                }
+                sidebarProvider.setLoading(false);
+                sidebarProvider.postProcessStopped();
+                if (activePanel) {
+                    activePanel.setLoading(false);
+                    activePanel.postProcessStopped();
+                }
+            }
         }
     });
 
@@ -813,7 +829,7 @@ export async function activate(context: vscode.ExtensionContext) {
         return { conversationText, panelMessage };
     };
 
-    async function processOutcome(outcome: PromptOutcome) {
+    async function processOutcome(outcome: PromptOutcome, cancelToken?: vscode.CancellationToken) {
         let currentOutcome: PromptOutcome | null = outcome;
 
         while (currentOutcome) {
@@ -821,12 +837,24 @@ export async function activate(context: vscode.ExtensionContext) {
             updateSidebarState();
             persistActiveSession();
 
+            // Check for cancellation before processing tool calls
+            if (cancelToken?.isCancellationRequested) {
+                console.log('Process outcome cancelled during tool processing');
+                return;
+            }
+
             const toolCalls = getToolCalls(currentOutcome);
             if (!toolCalls?.length) {
                 break;
             }
 
             for (const call of toolCalls) {
+                // Check for cancellation before each tool execution
+                if (cancelToken?.isCancellationRequested) {
+                    console.log('Process outcome cancelled during tool execution');
+                    return;
+                }
+
                 const requestedName = call?.function?.name ?? '';
                 const normalizedAction = fileToolAlias[requestedName] ?? requestedName;
                 if (!normalizedAction) {
@@ -851,7 +879,12 @@ export async function activate(context: vscode.ExtensionContext) {
             }
 
             try {
-                currentOutcome = await mcp.continueAfterTool();
+                // Check for cancellation before continuing
+                if (cancelToken?.isCancellationRequested) {
+                    console.log('Process outcome cancelled before continuing');
+                    return;
+                }
+                currentOutcome = await mcp.continueAfterTool(cancelToken);
             } catch (error) {
                 const friendly = error instanceof Error ? error.message : String(error);
                 sendSidebarMessage({ role: 'assistant', content: `❌ ${friendly}` });
@@ -865,11 +898,57 @@ export async function activate(context: vscode.ExtensionContext) {
 
     async function handlePrompt(prompt: string) {
         sidebarProvider.setLoading(true);
+        
+        // Create cancellation controller for this process
+        const cancellationTokenSource = new vscode.CancellationTokenSource();
+        const controller = {
+            cancel: () => {
+                cancellationTokenSource.cancel();
+                console.log('Cancellation requested for prompt processing');
+            }
+        };
+        
+        currentProcessController = controller;
+        currentCancellationTokenSource = cancellationTokenSource;
+        
         try {
-            const outcome = await mcp.handlePrompt(prompt);
-            await processOutcome(outcome);
+            const outcome = await mcp.handlePrompt(prompt, cancellationTokenSource.token);
+            
+            // Check if cancellation was requested during the request
+            if (cancellationTokenSource.token.isCancellationRequested) {
+                console.log('Prompt processing cancelled during request');
+                sidebarProvider.postProcessStopped();
+                if (activePanel) {
+                    activePanel.postProcessStopped();
+                }
+                return;
+            }
+            
+            await processOutcome(outcome, cancellationTokenSource.token);
+        } catch (error: unknown) {
+            // Check if the error is due to cancellation
+            if (cancellationTokenSource.token.isCancellationRequested) {
+                console.log('Prompt processing cancelled with error');
+                sidebarProvider.postProcessStopped();
+                if (activePanel) {
+                    activePanel.postProcessStopped();
+                }
+                return;
+            }
+            
+            const friendly = error instanceof Error ? error.message : String(error);
+            console.error('Error in handlePrompt:', friendly);
+            sendSidebarMessage({ role: 'assistant', content: `❌ ${friendly}` });
+            updateSidebarState();
+            persistActiveSession();
         } finally {
             sidebarProvider.setLoading(false);
+            if (currentProcessController === controller) {
+                currentProcessController = undefined;
+            }
+            if (currentCancellationTokenSource === cancellationTokenSource) {
+                currentCancellationTokenSource = undefined;
+            }
         }
     }
 
@@ -877,6 +956,19 @@ export async function activate(context: vscode.ExtensionContext) {
         const action = fileToolAlias[payload.action] ?? payload.action;
 
         sidebarProvider.setLoading(true);
+        
+        // Create cancellation controller for this process
+        const cancellationTokenSource = new vscode.CancellationTokenSource();
+        const controller = {
+            cancel: () => {
+                cancellationTokenSource.cancel();
+                console.log('Cancellation requested for file tool processing');
+            }
+        };
+        
+        currentProcessController = controller;
+        currentCancellationTokenSource = cancellationTokenSource;
+        
         try {
             const params = ensureToolParameters(action, {
                 file_path: payload.path,
@@ -887,10 +979,32 @@ export async function activate(context: vscode.ExtensionContext) {
                 edits: payload.edits
             });
             const result = await executeFileTool(action, params);
+            
+            // Check if cancellation was requested during the request
+            if (cancellationTokenSource.token.isCancellationRequested) {
+                console.log('File tool processing cancelled during request');
+                sidebarProvider.postProcessStopped();
+                if (activePanel) {
+                    activePanel.postProcessStopped();
+                }
+                return;
+            }
+            
             const { panelMessage } = buildToolOutputs(action, result);
             sidebarProvider.postFileResult(panelMessage);
         } catch (error: unknown) {
+            // Check if the error is due to cancellation
+            if (cancellationTokenSource.token.isCancellationRequested) {
+                console.log('File tool processing cancelled with error');
+                sidebarProvider.postProcessStopped();
+                if (activePanel) {
+                    activePanel.postProcessStopped();
+                }
+                return;
+            }
+            
             const friendly = error instanceof Error ? error.message : String(error);
+            console.error('Error in handleFileTool:', friendly);
             sidebarProvider.postFileResult({
                 role: 'tool',
                 content: friendly,
@@ -900,10 +1014,18 @@ export async function activate(context: vscode.ExtensionContext) {
             });
         } finally {
             sidebarProvider.setLoading(false);
+            if (currentProcessController === controller) {
+                currentProcessController = undefined;
+            }
+            if (currentCancellationTokenSource === cancellationTokenSource) {
+                currentCancellationTokenSource = undefined;
+            }
         }
     }
 
     let activePanel: CodexPanel | undefined;
+    let currentProcessController: { cancel: () => void } | undefined;
+    let currentCancellationTokenSource: vscode.CancellationTokenSource | undefined;
 
     const openSidebarDisposable = vscode.commands.registerCommand('idSiberCoder.openSidebar', () => {
         vscode.commands.executeCommand('workbench.view.extension.idSiberCoder');
@@ -945,6 +1067,22 @@ export async function activate(context: vscode.ExtensionContext) {
                         activePanel.postState(buildPanelState());
                     }
                 }, 200);
+            },
+            onStopProcess: () => {
+                if (currentProcessController) {
+                    currentProcessController.cancel();
+                    currentProcessController = undefined;
+                    if (currentCancellationTokenSource) {
+                        currentCancellationTokenSource.cancel();
+                        currentCancellationTokenSource = undefined;
+                    }
+                    sidebarProvider.setLoading(false);
+                    sidebarProvider.postProcessStopped();
+                    if (activePanel) {
+                        activePanel.setLoading(false);
+                        activePanel.postProcessStopped();
+                    }
+                }
             }
         });
 

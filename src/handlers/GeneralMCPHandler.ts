@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import {
     ContextManager,
     ConversationMessage,
@@ -56,9 +57,9 @@ export class GeneralMCPHandler {
         this.requestHandler.updateToolDefinitions(this.toolDefinitions);
     }
 
-    async handlePrompt(prompt: string): Promise<PromptOutcome> {
+    async handlePrompt(prompt: string, cancelToken?: vscode.CancellationToken): Promise<PromptOutcome> {
         try {
-            const result = await this.requestHandler.handle(prompt);
+            const result = await this.requestHandler.handle(prompt, cancelToken);
             this.loggingHandler.info('Received response from provider');
             return {
                 message: result.message,
@@ -90,8 +91,8 @@ export class GeneralMCPHandler {
         this.conversationHandler.addToolResult(content, toolName, toolCallId);
     }
 
-    async continueAfterTool(): Promise<PromptOutcome> {
-        const result = await this.requestHandler.continueConversation();
+    async continueAfterTool(cancelToken?: vscode.CancellationToken): Promise<PromptOutcome> {
+        const result = await this.requestHandler.continueConversation(cancelToken);
         this.loggingHandler.info('Provider responded after tool execution');
         return {
             message: result.message,

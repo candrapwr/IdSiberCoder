@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, isCancel } from 'axios';
 import * as vscode from 'vscode';
 import type { ConversationMessage, MessageUsage } from '../context/ContextManager';
 import type { ChatProvider, ProviderResponse, ToolDefinition } from './types';
@@ -39,9 +39,9 @@ export class OpenAIProvider implements ChatProvider {
                 }
                 if (toolCalls?.length) {
                     mapped.tool_calls = toolCalls.map((call) => ({
-                        id: call?.id,
-                        type: call?.type,
-                        function: call?.function
+                        id: call.id,
+                        type: call.type,
+                        function: call.function
                     }));
                 }
                 return mapped;
@@ -55,52 +55,43 @@ export class OpenAIProvider implements ChatProvider {
         }
 
         try {
-            const response = await this.client.post('/chat/completions', payload, {
-                headers: {
-                    Authorization: `Bearer ${this.config.apiKey}`,
-                    'Content-Type': 'application/json'
-                },
-                signal: cancelToken as unknown as AbortSignal
-            });
-
-            const choice = response.data?.choices?.[0];
-            const messagePayload = choice?.message ?? {};
-            const content: string = messagePayload?.content ?? '';
-            const toolCalls = Array.isArray(messagePayload?.tool_calls)
-                ? messagePayload.tool_calls.map((call: any) => ({
-                      id: call?.id,
-                      type: call?.type,
-                      function: {
-                          name: call?.function?.name,
-                          arguments: call?.function?.arguments ?? ''
-                      }
-                  }))
-                : undefined;
-
-            const usageRaw = response.data?.usage;
-            const usage: MessageUsage | undefined = usageRaw
-                ? {
-                      promptTokens: usageRaw.prompt_tokens,
-                      completionTokens: usageRaw.completion_tokens,
-                      totalTokens:
-                          usageRaw.total_tokens ??
-                          (typeof usageRaw.prompt_tokens === 'number' || typeof usageRaw.completion_tokens === 'number'
-                              ? (usageRaw.prompt_tokens ?? 0) + (usageRaw.completion_tokens ?? 0)
-                              : undefined)
-                  }
-                : undefined;
-
-            return {
-                message: {
-                    role: 'assistant',
-                    content,
-                    toolCalls
-                },
-                raw: response.data,
-                usage,
-                toolCalls
-            };
+            // Create AbortController that can be cancelled by VS Code cancellation token
+            const abortController = new AbortController();
+            
+            // Listen for cancellation from VS Code
+            if (cancelToken) {
+                const cancellationListener = cancelToken.onCancellationRequested(() => {
+                    abortController.abort();
+                });
+                
+                // Clean up listener when request completes
+                const cleanup = () => cancellationListener.dispose();
+                
+                const response = await this.client.post('/chat/completions', payload, {
+                    headers: {
+                        Authorization: `Bearer ${this.config.apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    signal: abortController.signal
+                }).finally(cleanup);
+                
+                return this.parseResponse(response.data);
+            } else {
+                const response = await this.client.post('/chat/completions', payload, {
+                    headers: {
+                        Authorization: `Bearer ${this.config.apiKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                return this.parseResponse(response.data);
+            }
         } catch (error: unknown) {
+            // Check if the error is due to cancellation
+            if (axios.isCancel(error)) {
+                throw new Error('Request cancelled by user');
+            }
+            
             const friendly = axios.isAxiosError(error)
                 ? error.response?.data?.error?.message ?? error.message
                 : (error as Error).message;
@@ -113,5 +104,45 @@ export class OpenAIProvider implements ChatProvider {
                 raw: error
             };
         }
+    }
+
+    private parseResponse(data: any): ProviderResponse {
+        const choice = data?.choices?.[0];
+        const messagePayload = choice?.message ?? {};
+        const content: string = messagePayload?.content ?? '';
+        const toolCalls = Array.isArray(messagePayload?.tool_calls)
+            ? messagePayload.tool_calls.map((call: any) => ({
+                  id: call?.id,
+                  type: call?.type,
+                  function: {
+                      name: call?.function?.name,
+                      arguments: call?.function?.arguments ?? ''
+                  }
+              }))
+            : undefined;
+
+        const usageRaw = data?.usage;
+        const usage: MessageUsage | undefined = usageRaw
+            ? {
+                  promptTokens: usageRaw.prompt_tokens,
+                  completionTokens: usageRaw.completion_tokens,
+                  totalTokens:
+                      usageRaw.total_tokens ??
+                      (typeof usageRaw.prompt_tokens === 'number' || typeof usageRaw.completion_tokens === 'number'
+                          ? (usageRaw.prompt_tokens ?? 0) + (usageRaw.completion_tokens ?? 0)
+                          : undefined)
+              }
+            : undefined;
+
+        return {
+            message: {
+                role: 'assistant',
+                content,
+                toolCalls
+            },
+            raw: data,
+            usage,
+            toolCalls
+        };
     }
 }

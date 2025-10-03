@@ -4,6 +4,7 @@ import { PanelCallbacks, PanelState, PanelMessage } from './CodexPanel';
 export interface SidebarCallbacks extends PanelCallbacks {
     onReady?: () => void;
     onOpenPanel?: () => void;
+    onStopProcess?: () => void;
 }
 
 export class SidebarView implements vscode.WebviewViewProvider {
@@ -66,6 +67,9 @@ export class SidebarView implements vscode.WebviewViewProvider {
                 case 'openPanel':
                     this._callbacks.onOpenPanel?.();
                     break;
+                case 'stopProcess':
+                    this._callbacks.onStopProcess?.();
+                    break;
             }
         });
     }
@@ -80,6 +84,10 @@ export class SidebarView implements vscode.WebviewViewProvider {
 
     public postFileResult(message: PanelMessage): void {
         this._view?.webview.postMessage({ type: 'fileResult', message });
+    }
+
+    public postProcessStopped(): void {
+        this._view?.webview.postMessage({ type: 'processStopped' });
     }
 
     public setLoading(value: boolean): void {

@@ -26,6 +26,7 @@ let modelOptions = [];
 let activeModelOptionId;
 let providerInfos = [];
 let apiOverlayOpen = false;
+let isStopping = false;
 
 const escapeHtml = (value = '') =>
     value
@@ -361,13 +362,39 @@ const addExtraMessage = (message) => {
 
 function sendPrompt() {
     const prompt = promptEl.value.trim();
-    if (!prompt) {
+    
+    // If loading and not already stopping, stop the process
+    if (isLoading && !isStopping) {
+        isStopping = true;
+        updateSendButton();
+        vscode.postMessage({ type: 'stopProcess' });
         return;
     }
-    vscode.postMessage({ type: 'prompt', prompt });
-    addBaseMessage({ role: 'user', content: prompt, html: `<p>${escapeHtml(prompt)}</p>` });
-    promptEl.value = '';
-    promptEl.focus();
+    
+    // If not loading, send the prompt
+    if (prompt && !isLoading) {
+        vscode.postMessage({ type: 'prompt', prompt });
+        addBaseMessage({ role: 'user', content: prompt, html: `<p>${escapeHtml(prompt)}</p>` });
+        promptEl.value = '';
+        promptEl.focus();
+    }
+}
+
+function updateSendButton() {
+    if (!sendButton) return;
+    
+    if (isLoading) {
+        if (isStopping) {
+            sendButton.textContent = 'Stopping...';
+            sendButton.disabled = true;
+        } else {
+            sendButton.textContent = 'Stop';
+            sendButton.disabled = false;
+        }
+    } else {
+        sendButton.textContent = 'Send';
+        sendButton.disabled = false;
+    }
 }
 
 sendButton?.addEventListener('click', sendPrompt);
@@ -460,6 +487,14 @@ window.addEventListener('message', (event) => {
     }
     if (type === 'loading') {
         isLoading = Boolean(value);
+        isStopping = false; // Reset stopping state when loading state changes
+        updateSendButton();
+        renderHistory();
+    }
+    if (type === 'processStopped') {
+        isLoading = false;
+        isStopping = false;
+        updateSendButton();
         renderHistory();
     }
 });
