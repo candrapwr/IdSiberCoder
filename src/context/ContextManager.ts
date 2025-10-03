@@ -60,7 +60,7 @@ export class ContextManager implements Disposable {
     private summaryPrefix: string;
     private summaryMaxLineLength: number;
     private summaryLines: string[] = [];
-    private summaryFingerprint = new Set<string>();
+    private summaryHashes = new Set<string>();
 
     constructor(options: ContextManagerOptions = {}) {
         this.enabled = options.enabled ?? true;
@@ -75,12 +75,12 @@ export class ContextManager implements Disposable {
 
     dispose(): void {
         this.summaryLines = [];
-        this.summaryFingerprint.clear();
+        this.summaryHashes.clear();
     }
 
     reset(): void {
         this.summaryLines = [];
-        this.summaryFingerprint.clear();
+        this.summaryHashes.clear();
     }
 
     updateOptions(options: Partial<ContextManagerOptions>): void {
@@ -111,6 +111,8 @@ export class ContextManager implements Disposable {
     }
 
     optimize(messages: ConversationMessage[]): OptimizationResult {
+        this.hydrateSummaryFromMessages(messages);
+
         if (!this.enabled || messages.length <= 2) {
             return {
                 optimized: false,
@@ -184,31 +186,77 @@ export class ContextManager implements Disposable {
         }
 
         const keepTail = Math.max(0, this.summaryRetention);
-        const tail = messages.slice(-keepTail);
-        const head = messages.slice(0, messages.length - keepTail);
+        let startIndex = Math.max(0, messages.length - keepTail);
 
-        const bullets: string[] = [];
-        for (let i = 0; i < head.length; i += 2) {
-            const user = head[i];
-            const assistant = head[i + 1];
-            if (!user || user.role !== 'user' || !assistant) {
+        if (startIndex > 0) {
+            while (startIndex > 0 && startIndex < messages.length && messages[startIndex].role === 'tool') {
+                startIndex -= 1;
+            }
+
+            if (
+                startIndex > 0 &&
+                startIndex <= messages.length &&
+                messages[startIndex - 1].role === 'assistant' &&
+                Array.isArray(messages[startIndex - 1].toolCalls) &&
+                messages[startIndex - 1].toolCalls!.length > 0
+            ) {
+                startIndex -= 1;
+            }
+        }
+
+        const tail = messages.slice(startIndex);
+        const head = messages.slice(0, startIndex);
+
+        const newLines: string[] = [];
+        const roleLabels: Record<Role, string> = {
+            system: 'system',
+            user: 'user',
+            assistant: 'assistant',
+            tool: 'tool'
+        };
+
+        for (const entry of head) {
+            if (entry.role === 'system') {
                 continue;
             }
 
-            const intent = user.content.replace(/\s+/g, ' ').trim();
-            const response = assistant.content.replace(/\s+/g, ' ').trim();
-            const line = `• ${intent}${response ? ` → ${response}` : ''}`;
-            bullets.push(this.truncate(line));
+            if (entry.role === 'assistant' && entry.content.startsWith(this.summaryPrefix)) {
+                continue;
+            }
+
+            const label =
+                entry.role === 'tool'
+                    ? `${roleLabels[entry.role]}${entry.name ? ` (${entry.name})` : ''}`
+                    : roleLabels[entry.role];
+
+            const content = entry.content.replace(/\s+/g, ' ').trim();
+            if (!content) {
+                continue;
+            }
+
+            const bullet = this.truncate(`• ${label}: ${content}`);
+            const hash = this.hashSummary(bullet);
+            if (!this.summaryHashes.has(hash)) {
+                this.summaryHashes.add(hash);
+                newLines.push(bullet);
+            }
         }
 
-        const newSummary = bullets.join('\n');
-        const hash = this.hashSummary(newSummary);
-        const changed = !this.summaryFingerprint.has(hash);
-
-        if (changed) {
-            this.summaryLines = bullets;
-            this.summaryFingerprint = new Set([hash]);
+        if (!newLines.length) {
+            if (!this.summaryLines.length) {
+                return { summaryUpdated: false, messages };
+            }
+            const summaryMessage: ConversationMessage = {
+                role: 'assistant',
+                content: `${this.summaryPrefix}\n${this.summaryLines.join('\n')}`.trim()
+            };
+            return {
+                summaryUpdated: false,
+                messages: [messages[0], summaryMessage, ...tail]
+            };
         }
+
+        this.summaryLines.push(...newLines);
 
         const summaryMessage: ConversationMessage = {
             role: 'assistant',
@@ -216,7 +264,7 @@ export class ContextManager implements Disposable {
         };
 
         return {
-            summaryUpdated: changed,
+            summaryUpdated: true,
             messages: [messages[0], summaryMessage, ...tail]
         };
     }
@@ -235,5 +283,27 @@ export class ContextManager implements Disposable {
             hash |= 0;
         }
         return hash.toString(16);
+    }
+
+    private hydrateSummaryFromMessages(messages: ConversationMessage[]): void {
+        if (this.summaryLines.length) {
+            return;
+        }
+        const candidate = messages.find(
+            (message) => message.role === 'assistant' && message.content.startsWith(this.summaryPrefix)
+        );
+        if (!candidate) {
+            return;
+        }
+        const lines = candidate.content
+            .split('\n')
+            .slice(1)
+            .map((line) => line.trim())
+            .filter(Boolean);
+        if (!lines.length) {
+            return;
+        }
+        this.summaryLines = lines;
+        this.summaryHashes = new Set(lines.map((line) => this.hashSummary(line)));
     }
 }
