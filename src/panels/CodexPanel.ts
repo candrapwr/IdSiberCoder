@@ -15,6 +15,8 @@ export interface PanelCallbacks {
     onSwitchSession: (sessionId: string) => void;
     onModelSelect: (selectionId: string) => void;
     onSaveApiKey: (providerId: string, apiKey: string | undefined) => void;
+    onReady?: () => void;
+    onOpenPanel?: () => void;
 }
 
 export type PanelRole = 'user' | 'assistant' | 'tool';
@@ -131,9 +133,20 @@ export class CodexPanel implements vscode.Disposable {
             ) {
                 callbacks.onSaveApiKey(message.providerId, undefined);
             }
+            if (message?.type === 'openPanel') {
+                callbacks.onOpenPanel?.();
+            }
         }, undefined, this.disposables);
 
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
+    }
+
+    public reveal() {
+        this.panel.reveal();
+    }
+
+    public onDidDispose(callback: () => void) {
+        this.panel.onDidDispose(callback);
     }
 
     dispose(): void {
@@ -179,11 +192,11 @@ export class CodexPanel implements vscode.Disposable {
 <body>
     <header class="header">
         <div class="header-row">
-            <div class="title">IdSiberCoder</div>
             <div class="workspace" id="workspaceLabel">Workspace: unknown</div>
             <div class="header-actions">
                 <button class="header-icon" id="sessionToggle" title="Sessions" aria-label="Sessions">☰</button>
                 <button class="header-icon" id="apiKeyToggle" title="API Keys" aria-label="API Keys">🔑</button>
+                <button class="header-icon" id="openPanel" title="Open in Panel" aria-label="Open in Panel">📋</button>
             </div>
         </div>
     </header>

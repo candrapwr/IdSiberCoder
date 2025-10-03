@@ -14,6 +14,7 @@ const apiKeyToggleButton = document.getElementById('apiKeyToggle');
 const apiOverlay = document.getElementById('apiOverlay');
 const apiCloseButton = document.getElementById('apiClose');
 const apiListEl = document.getElementById('apiList');
+const openPanelButton = document.getElementById('openPanel');
 
 let baseMessages = [];
 const extraMessages = [];
@@ -430,14 +431,15 @@ sessionsCreateButton?.addEventListener('click', () => {
     closeSessions();
 });
 
+openPanelButton?.addEventListener('click', () => {
+    vscode.postMessage({ type: 'openPanel' });
+});
+
 window.addEventListener('message', (event) => {
     const { type, state, message, value } = event.data;
     if (type === 'state') {
         baseMessages = state.messages ?? [];
         extraMessages.length = 0;
-        if (state.workingDirectory) {
-            workspaceLabel.textContent = `Workspace: ${state.workingDirectory}`;
-        }
         sessions = Array.isArray(state.sessions) ? state.sessions : [];
         activeSessionId = state.activeSessionId;
         providerInfos = Array.isArray(state.providers) ? state.providers : [];
@@ -462,5 +464,13 @@ window.addEventListener('message', (event) => {
     }
 });
 
-renderHistory();
-renderModelOptions();
+// Wait for DOM to be fully ready before sending ready event
+document.addEventListener('DOMContentLoaded', () => {
+    renderHistory();
+    renderModelOptions();
+    
+    // Notify extension that webview is ready
+    setTimeout(() => {
+        vscode.postMessage({ type: 'ready' });
+    }, 100);
+});

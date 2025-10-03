@@ -21,10 +21,33 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "idSiberCoder",
+          "title": "IdSiberCoder",
+          "icon": "$(comment-discussion)"
+        }
+      ]
+    },
+    "views": {
+      "idSiberCoder": [
+        {
+          "id": "idSiberCoder-sidebar",
+          "name": "Chat",
+          "type": "webview"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "idSiberCoder.openPanel",
+        "command": "idSiberCoder.openSidebar",
         "title": "IdSiberCoder: Open Assistant",
+        "category": "IdSiberCoder"
+      },
+      {
+        "command": "idSiberCoder.openPanel",
+        "title": "IdSiberCoder: Open Assistant (Panel)",
         "category": "IdSiberCoder"
       },
       {
