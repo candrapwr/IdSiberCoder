@@ -472,6 +472,14 @@ window.addEventListener('message', (event) => {
         providerInfos = Array.isArray(state.providers) ? state.providers : [];
         modelOptions = Array.isArray(state.modelOptions) ? state.modelOptions : [];
         activeModelOptionId = state.activeModelOptionId;
+        
+        // Handle isProcessing state
+        if (state.isProcessing !== undefined) {
+            isLoading = state.isProcessing;
+            isStopping = false;
+            updateSendButton();
+        }
+        
         renderModelOptions();
         if (apiOverlayOpen) {
             renderApiList();

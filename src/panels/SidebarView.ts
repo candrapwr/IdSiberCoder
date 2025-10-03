@@ -13,6 +13,15 @@ export class SidebarView implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private _extensionUri: vscode.Uri;
     private _callbacks: SidebarCallbacks;
+    private _currentState: PanelState = {
+        messages: [],
+        workingDirectory: undefined,
+        sessions: [],
+        activeSessionId: undefined,
+        providers: [],
+        modelOptions: [],
+        isProcessing: false
+    };
 
     constructor(extensionUri: vscode.Uri, callbacks: SidebarCallbacks) {
         this._extensionUri = extensionUri;
@@ -35,9 +44,18 @@ export class SidebarView implements vscode.WebviewViewProvider {
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
 
+        // Restore state when webview is resolved
+        if (this._currentState.messages.length > 0 || this._currentState.isProcessing) {
+            webviewView.webview.postMessage({ type: 'state', state: this._currentState });
+        }
+
         webviewView.webview.onDidReceiveMessage(data => {
             switch (data.type) {
                 case 'ready':
+                    // Send current state when webview is ready
+                    if (this._currentState.messages.length > 0 || this._currentState.isProcessing) {
+                        webviewView.webview.postMessage({ type: 'state', state: this._currentState });
+                    }
                     this._callbacks.onReady?.();
                     break;
                 case 'prompt':
@@ -75,10 +93,12 @@ export class SidebarView implements vscode.WebviewViewProvider {
     }
 
     public postState(state: PanelState): void {
+        this._currentState = { ...state };
         this._view?.webview.postMessage({ type: 'state', state });
     }
 
     public appendMessage(message: PanelMessage): void {
+        this._currentState.messages = [...this._currentState.messages, message];
         this._view?.webview.postMessage({ type: 'message', message });
     }
 
@@ -91,6 +111,7 @@ export class SidebarView implements vscode.WebviewViewProvider {
     }
 
     public setLoading(value: boolean): void {
+        this._currentState.isProcessing = value;
         this._view?.webview.postMessage({ type: 'loading', value });
     }
 

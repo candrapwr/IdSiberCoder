@@ -39,6 +39,7 @@ export interface PanelState {
     providers: PanelProvider[];
     modelOptions: PanelModelOption[];
     activeModelOptionId?: string;
+    isProcessing?: boolean;
 }
 
 export interface PanelSession {
