@@ -19,11 +19,6 @@
     "Other",
     "AI"
   ],
-  "activationEvents": [
-    "onCommand:idSiberCoder.openPanel",
-    "onCommand:idSiberCoder.sendPrompt",
-    "onStartupFinished"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -91,7 +86,11 @@
     }
   },
   "scripts": {
+    "vscode:prepublish": "npm run esbuild-base -- --minify",
     "compile": "tsc -p ./",
+    "esbuild-base": "node esbuild.js",
+    "esbuild": "npm run esbuild-base -- --sourcemap",
+    "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "watch": "tsc -w -p ./",
     "pretest": "npm run compile",
     "test": "node ./out/test/runTests.js"
@@ -102,7 +101,8 @@
     "@types/markdown-it": "^13.0.6",
     "typescript": "^5.4.5",
     "tslib": "^2.6.2",
-    "@vscode/test-electron": "^2.3.6"
+    "@vscode/test-electron": "^2.3.6",
+    "esbuild": "^0.20.2"
   },
   "dependencies": {
     "axios": "^1.6.8",

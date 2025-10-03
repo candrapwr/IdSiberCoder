@@ -15,6 +15,7 @@ idSiberCoder/
 │   ├── providers/              # DeepSeek/OpenAI clients plus shared provider types
 │   └── tools/                  # Workspace file operations consumed by the tool layer
 ├── media/                      # Webview assets (JS/CSS)
+├── esbuild.js                  # Build script for bundling the extension
 ├── package.json                # Extension manifest, scripts, dependencies
 ├── tsconfig.json               # TypeScript build settings
 └── README.md / DEVELOPMENT.md  # Non-technical overview & this technical reference
@@ -58,13 +59,13 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 
 - **Settings**: provider choice (`deepseek` or `openai`), per-provider base URLs/models, provider-specific API keys (stored in `SecretStorage`), context optimisation switches, and `maxIterations` are surfaced through VS Code’s settings UI.
 - **Commands**: `IdSiberCoder: Open Assistant` (webview) and `IdSiberCoder: Send Prompt` (prompt input) are registered in `package.json`.
-- **Build scripts**: `npm run compile` (TypeScript build), `npm run watch`, and `npm test` (placeholder).
+- **Build scripts**: The extension is bundled using `esbuild`. Key scripts include `npm run esbuild` (development build) and `npm run esbuild-watch` (watches for changes). Packaging with `vsce package` automatically creates a minified production build.
 
 ## Development Notes
 
 - Type declarations for Markdown rendering live in `src/types/markdown-it.d.ts`.
-- The extension uses TypeScript strict mode; run `npm run compile` before packaging.
-- Webview assets are plain JS/CSS – no bundler is currently wired in. The composer exposes a single combined model dropdown, while sessions and API keys are managed through dedicated overlays in the header.
+- The extension is bundled using `esbuild` before packaging. The `vscode:prepublish` script handles this automatically.
+- Webview assets (`media/`) are plain JS/CSS – the bundler is only configured for the extension's TypeScript source code. The composer exposes a single combined model dropdown, while sessions and API keys are managed through dedicated overlays in the header.
 - When adding new tools, update both `buildTooling()` definitions and the `FileManager` implementation, then surface them in the UI if user-facing controls are desired.
 
 ## Future Hooks
