@@ -223,6 +223,135 @@ body {
     background: rgba(210, 110, 120, 0.45);
 }
 
+.apikey-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 10, 18, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 3.2rem 1.4rem 1.4rem;
+    z-index: 20;
+}
+
+.apikey-panel {
+    width: min(360px, 90vw);
+    background: rgba(18, 24, 36, 0.95);
+    border: 1px solid rgba(120, 140, 170, 0.4);
+    border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    padding: 1rem 1.1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.apikey-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.apikey-panel-title {
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(220, 230, 245, 0.92);
+}
+
+.apikey-close {
+    border: 1px solid rgba(120, 140, 170, 0.4);
+    background: rgba(80, 100, 140, 0.24);
+    color: rgba(220, 230, 245, 0.9);
+    border-radius: 6px;
+    width: 1.4rem;
+    height: 1.4rem;
+    font-size: 0.85rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.apikey-close:hover {
+    background: rgba(120, 150, 200, 0.32);
+    border-color: rgba(120, 150, 200, 0.5);
+}
+
+.apikey-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.apikey-empty {
+    font-size: 0.68rem;
+    color: rgba(200, 210, 225, 0.75);
+    text-align: center;
+    padding: 1.2rem 0.8rem;
+    border: 1px dashed rgba(120, 140, 170, 0.4);
+    border-radius: 10px;
+}
+
+.apikey-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    border: 1px solid rgba(120, 140, 170, 0.35);
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    background: rgba(28, 34, 48, 0.85);
+}
+
+.apikey-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.apikey-item-title {
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(220, 230, 245, 0.92);
+}
+
+.apikey-status {
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(140, 200, 150, 0.85);
+}
+
+.apikey-input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.apikey-input-row input {
+    flex: 1;
+    border-radius: 6px;
+    border: 1px solid rgba(120, 140, 170, 0.35);
+    background: rgba(30, 36, 48, 0.9);
+    color: rgba(220, 230, 245, 0.92);
+    font-size: 0.68rem;
+    padding: 0.3rem 0.55rem;
+}
+
+.apikey-input-row input::placeholder {
+    color: rgba(180, 190, 210, 0.6);
+}
+
+.apikey-input-row button {
+    border-radius: 6px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
 .spinner {
     width: 12px;
     height: 12px;
@@ -606,6 +735,35 @@ textarea {
     resize: vertical;
     line-height: 1.28;
     font-size: 0.78rem;
+    box-sizing: border-box;
+}
+
+.composer-bottom {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.composer-model {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.composer-model select {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid rgba(120, 140, 170, 0.35);
+    background: rgba(30, 36, 48, 0.9);
+    color: rgba(220, 230, 245, 0.9);
+    font-size: 0.68rem;
+    padding: 0.25rem 0.5rem;
+    letter-spacing: 0.04em;
+}
+
+.composer-model select:focus {
+    outline: 1px solid rgba(140, 170, 210, 0.6);
+    border-color: rgba(140, 170, 210, 0.6);
 }
 
 .actions {

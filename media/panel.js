@@ -4,11 +4,16 @@ const historyEl = document.getElementById('history');
 const promptEl = document.getElementById('prompt');
 const sendButton = document.getElementById('send');
 const workspaceLabel = document.getElementById('workspaceLabel');
+const modelSelect = document.getElementById('modelSelect');
 const sessionToggleButton = document.getElementById('sessionToggle');
 const sessionsOverlay = document.getElementById('sessionsOverlay');
 const sessionsListEl = document.getElementById('sessionsPanelList');
 const sessionsCreateButton = document.getElementById('sessionsCreate');
 const sessionsCloseButton = document.getElementById('sessionsClose');
+const apiKeyToggleButton = document.getElementById('apiKeyToggle');
+const apiOverlay = document.getElementById('apiOverlay');
+const apiCloseButton = document.getElementById('apiClose');
+const apiListEl = document.getElementById('apiList');
 
 let baseMessages = [];
 const extraMessages = [];
@@ -16,6 +21,10 @@ let isLoading = false;
 let sessions = [];
 let activeSessionId;
 let sessionsOpen = false;
+let modelOptions = [];
+let activeModelOptionId;
+let providerInfos = [];
+let apiOverlayOpen = false;
 
 const escapeHtml = (value = '') =>
     value
@@ -167,6 +176,100 @@ const renderLoadingEntry = (isFirstEntry) => {
     return container;
 };
 
+const renderModelOptions = () => {
+    if (!modelSelect) {
+        return;
+    }
+
+    modelSelect.innerHTML = '';
+
+    if (!modelOptions.length) {
+        modelSelect.disabled = true;
+        return;
+    }
+
+    if (!activeModelOptionId || !modelOptions.some((option) => option.id === activeModelOptionId)) {
+        activeModelOptionId = modelOptions[0].id;
+    }
+
+    modelOptions.forEach((option) => {
+        const node = document.createElement('option');
+        node.value = option.id;
+        node.textContent = option.label;
+        modelSelect.appendChild(node);
+    });
+
+    modelSelect.value = activeModelOptionId;
+    modelSelect.disabled = false;
+};
+
+const renderApiList = () => {
+    if (!apiListEl) {
+        return;
+    }
+
+    apiListEl.innerHTML = '';
+
+    if (!providerInfos.length) {
+        const empty = document.createElement('div');
+        empty.className = 'apikey-empty';
+        empty.textContent = 'Tidak ada penyedia yang tersedia.';
+        apiListEl.appendChild(empty);
+        return;
+    }
+
+    providerInfos.forEach((provider) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'apikey-item';
+
+        const header = document.createElement('div');
+        header.className = 'apikey-item-header';
+
+        const title = document.createElement('div');
+        title.className = 'apikey-item-title';
+        title.textContent = provider.label;
+        header.appendChild(title);
+
+        if (provider.hasApiKey) {
+            const status = document.createElement('span');
+            status.className = 'apikey-status';
+            status.textContent = 'tersimpan';
+            header.appendChild(status);
+        }
+
+        const inputRow = document.createElement('div');
+        inputRow.className = 'apikey-input-row';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Masukkan API key';
+        input.autocomplete = 'off';
+        input.autocapitalize = 'none';
+        input.spellcheck = false;
+        input.dataset.providerId = provider.id;
+
+        const saveButton = document.createElement('button');
+        saveButton.type = 'button';
+        saveButton.textContent = 'Simpan';
+        saveButton.addEventListener('click', () => {
+            const value = input.value.trim();
+            vscode.postMessage({
+                type: value ? 'provider:apikey:set' : 'provider:apikey:clear',
+                providerId: provider.id,
+                apiKey: value
+            });
+            input.value = '';
+        });
+
+        inputRow.appendChild(input);
+        inputRow.appendChild(saveButton);
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(inputRow);
+        apiListEl.appendChild(wrapper);
+    });
+};
+
 const renderSessions = () => {
     if (!sessionsListEl) {
         return;
@@ -235,6 +338,7 @@ const openSessions = () => {
     if (!sessionsOverlay) {
         return;
     }
+    closeApiOverlay();
     sessionsOpen = true;
     sessionsOverlay.classList.remove('hidden');
     renderSessions();
@@ -246,6 +350,24 @@ const closeSessions = () => {
     }
     sessionsOpen = false;
     sessionsOverlay.classList.add('hidden');
+};
+
+const openApiOverlay = () => {
+    if (!apiOverlay) {
+        return;
+    }
+    closeSessions();
+    apiOverlayOpen = true;
+    apiOverlay.classList.remove('hidden');
+    renderApiList();
+};
+
+const closeApiOverlay = () => {
+    if (!apiOverlay) {
+        return;
+    }
+    apiOverlayOpen = false;
+    apiOverlay.classList.add('hidden');
 };
 
 const addBaseMessage = (message) => {
@@ -276,11 +398,32 @@ promptEl?.addEventListener('keydown', (event) => {
     }
 });
 
+modelSelect?.addEventListener('change', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement)) {
+        return;
+    }
+    const selection = target.value;
+    if (!selection || selection === activeModelOptionId) {
+        return;
+    }
+    activeModelOptionId = selection;
+    vscode.postMessage({ type: 'model:select', selectionId: selection });
+});
+
 sessionToggleButton?.addEventListener('click', () => {
     if (sessionsOpen) {
         closeSessions();
     } else {
         openSessions();
+    }
+});
+
+apiKeyToggleButton?.addEventListener('click', () => {
+    if (apiOverlayOpen) {
+        closeApiOverlay();
+    } else {
+        openApiOverlay();
     }
 });
 
@@ -292,6 +435,16 @@ sessionsOverlay?.addEventListener('click', (event) => {
 
 sessionsCloseButton?.addEventListener('click', () => {
     closeSessions();
+});
+
+apiOverlay?.addEventListener('click', (event) => {
+    if (event.target === apiOverlay) {
+        closeApiOverlay();
+    }
+});
+
+apiCloseButton?.addEventListener('click', () => {
+    closeApiOverlay();
 });
 
 sessionsCreateButton?.addEventListener('click', () => {
@@ -309,6 +462,13 @@ window.addEventListener('message', (event) => {
         }
         sessions = Array.isArray(state.sessions) ? state.sessions : [];
         activeSessionId = state.activeSessionId;
+        providerInfos = Array.isArray(state.providers) ? state.providers : [];
+        modelOptions = Array.isArray(state.modelOptions) ? state.modelOptions : [];
+        activeModelOptionId = state.activeModelOptionId;
+        renderModelOptions();
+        if (apiOverlayOpen) {
+            renderApiList();
+        }
         renderSessions();
         renderHistory();
     }
@@ -325,3 +485,4 @@ window.addEventListener('message', (event) => {
 });
 
 renderHistory();
+renderModelOptions();

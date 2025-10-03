@@ -1,11 +1,18 @@
 import * as vscode from 'vscode';
+import { PROVIDERS, ProviderId } from './providers';
 
-const SECRET_KEY = 'idSiberCoder.deepseek.apiKey';
+const SECRET_PREFIX = 'idSiberCoder.apiKey.';
 
-export interface SettingsSnapshot {
-    apiKey: string | undefined;
+export interface ProviderSettingsSnapshot {
     baseUrl: string;
     model: string;
+}
+
+export interface SettingsSnapshot {
+    provider: ProviderId;
+    providers: Record<ProviderId, ProviderSettingsSnapshot>;
+    apiKey?: string;
+    apiKeys: Record<ProviderId, boolean>;
     enableContextOptimization: boolean;
     contextSummaryThreshold: number;
     contextSummaryRetention: number;
@@ -13,46 +20,163 @@ export interface SettingsSnapshot {
 }
 
 export class SettingsManager {
-    private readonly configuration = vscode.workspace.getConfiguration('idSiberCoder');
-
     constructor(private readonly secrets: vscode.SecretStorage) {}
 
+    private getUpdateTarget(): vscode.ConfigurationTarget {
+        return vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0
+            ? vscode.ConfigurationTarget.Workspace
+            : vscode.ConfigurationTarget.Global;
+    }
+
+    private getConfiguration(): vscode.WorkspaceConfiguration {
+        return vscode.workspace.getConfiguration('idSiberCoder');
+    }
+
+    private getSecretKey(provider: ProviderId): string {
+        return `${SECRET_PREFIX}${provider}`;
+    }
+
+    private async clearConfigurationApiKey(configuration: vscode.WorkspaceConfiguration): Promise<void> {
+        await configuration.update('apiKey', undefined, vscode.ConfigurationTarget.Global);
+        if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+            await configuration.update('apiKey', undefined, vscode.ConfigurationTarget.Workspace);
+        }
+    }
+
     async getSettings(): Promise<SettingsSnapshot> {
-        const storedKey = await this.secrets.get(SECRET_KEY);
-        const configuredKey = this.configuration.get<string>('apiKey');
+        const configuration = this.getConfiguration();
+        const provider = configuration.get<ProviderId>('provider', 'deepseek');
+
+        const providers: Record<ProviderId, ProviderSettingsSnapshot> = {} as Record<ProviderId, ProviderSettingsSnapshot>;
+        const apiKeys: Record<ProviderId, boolean> = {} as Record<ProviderId, boolean>;
+
+        let activeApiKey: string | undefined;
+
+        for (const providerId of Object.keys(PROVIDERS) as ProviderId[]) {
+            const metadata = PROVIDERS[providerId];
+            const baseUrl =
+                configuration.get<string>(`${providerId}.baseUrl`, metadata.defaultBaseUrl) ||
+                metadata.defaultBaseUrl;
+            const model =
+                configuration.get<string>(`${providerId}.model`, metadata.defaultModel) ||
+                metadata.defaultModel;
+            providers[providerId] = { baseUrl, model };
+
+            let hasKey = false;
+            let configuredKey: string | undefined;
+            if (providerId === 'deepseek') {
+                configuredKey = configuration.get<string>('apiKey')?.trim() || undefined;
+                hasKey = Boolean(configuredKey);
+            }
+
+            if (!hasKey) {
+                const stored = await this.secrets.get(this.getSecretKey(providerId));
+                hasKey = Boolean(stored?.trim());
+                if (providerId === provider) {
+                    activeApiKey = stored?.trim() || configuredKey;
+                }
+            } else if (providerId === provider) {
+                activeApiKey = configuredKey;
+            }
+
+            apiKeys[providerId] = hasKey;
+        }
+
+        // Back-compat: allow legacy baseUrl/model at root level to seed DeepSeek config once.
+        if (!configuration.get<string>('deepseek.baseUrl')) {
+            const legacyBase = configuration.get<string>('baseUrl');
+            if (legacyBase) {
+                providers.deepseek.baseUrl = legacyBase;
+            }
+        }
+        if (!configuration.get<string>('deepseek.model')) {
+            const legacyModel = configuration.get<string>('model');
+            if (legacyModel) {
+                providers.deepseek.model = legacyModel;
+            }
+        }
 
         return {
-            apiKey: configuredKey?.trim() || storedKey || undefined,
-            baseUrl: this.configuration.get<string>('baseUrl', 'https://api.deepseek.com'),
-            model: this.configuration.get<string>('model', 'deepseek-chat'),
-            enableContextOptimization: this.configuration.get<boolean>('enableContextOptimization', true),
-            contextSummaryThreshold: this.configuration.get<number>('contextSummaryThreshold', 12),
-            contextSummaryRetention: this.configuration.get<number>('contextSummaryRetention', 6),
-            maxIterations: this.configuration.get<number>('maxIterations', 12)
+            provider,
+            providers,
+            apiKey: activeApiKey,
+            apiKeys,
+            enableContextOptimization: configuration.get<boolean>('enableContextOptimization', true),
+            contextSummaryThreshold: configuration.get<number>('contextSummaryThreshold', 12),
+            contextSummaryRetention: configuration.get<number>('contextSummaryRetention', 6),
+            maxIterations: configuration.get<number>('maxIterations', 12)
         };
     }
 
-    async ensureApiKey(): Promise<string | undefined> {
-        const settings = await this.getSettings();
-        if (settings.apiKey) {
-            return settings.apiKey;
+    async getApiKey(provider: ProviderId): Promise<string | undefined> {
+        const configuration = this.getConfiguration();
+        const configuredKey = configuration.get<string>('apiKey');
+        if (provider === 'deepseek' && configuredKey?.trim()) {
+            return configuredKey.trim();
+        }
+        const stored = await this.secrets.get(this.getSecretKey(provider));
+        return stored ?? undefined;
+    }
+
+    async ensureApiKey(provider: ProviderId): Promise<string | undefined> {
+        const existing = await this.getApiKey(provider);
+        if (existing) {
+            return existing;
         }
 
+        const providerLabel = PROVIDERS[provider]?.label ?? provider;
         const input = await vscode.window.showInputBox({
-            prompt: 'Enter DeepSeek API key for IdSiberCoder',
+            prompt: `Enter ${providerLabel} API key for IdSiberCoder`,
             placeHolder: 'sk-...'
         });
 
         if (input && input.trim()) {
-            await this.secrets.store(SECRET_KEY, input.trim());
+            await this.storeApiKey(provider, input.trim());
             return input.trim();
         }
 
-        vscode.window.showWarningMessage('IdSiberCoder requires a DeepSeek API key to operate.');
+        vscode.window.showWarningMessage(`IdSiberCoder requires a ${providerLabel} API key to operate.`);
         return undefined;
     }
 
-    async clearApiKey(): Promise<void> {
-        await this.secrets.delete(SECRET_KEY);
+    async clearApiKey(provider: ProviderId): Promise<void> {
+        const configuration = this.getConfiguration();
+        if (provider === 'deepseek') {
+            await this.clearConfigurationApiKey(configuration);
+        }
+        await this.secrets.delete(this.getSecretKey(provider));
+    }
+
+    async updateProvider(provider: ProviderId): Promise<void> {
+        const configuration = this.getConfiguration();
+        await configuration.update('provider', provider, this.getUpdateTarget());
+    }
+
+    async updateModel(provider: ProviderId, model: string): Promise<void> {
+        const configuration = this.getConfiguration();
+        await configuration.update(`${provider}.model`, model, this.getUpdateTarget());
+    }
+
+    async updateBaseUrl(provider: ProviderId, baseUrl: string): Promise<void> {
+        const configuration = this.getConfiguration();
+        await configuration.update(`${provider}.baseUrl`, baseUrl, this.getUpdateTarget());
+    }
+
+    async setApiKey(provider: ProviderId, apiKey?: string): Promise<void> {
+        const configuration = this.getConfiguration();
+        const trimmed = apiKey?.trim();
+        if (provider === 'deepseek') {
+            await this.clearConfigurationApiKey(configuration);
+        }
+
+        if (trimmed) {
+            await this.storeApiKey(provider, trimmed);
+        } else {
+            await this.secrets.delete(this.getSecretKey(provider));
+        }
+    }
+
+    private async storeApiKey(provider: ProviderId, value: string): Promise<void> {
+        await this.secrets.store(this.getSecretKey(provider), value);
     }
 }

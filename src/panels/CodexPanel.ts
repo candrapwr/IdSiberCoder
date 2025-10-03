@@ -13,6 +13,8 @@ export interface PanelCallbacks {
     onCreateSession: () => void;
     onDeleteSession: (sessionId: string) => void;
     onSwitchSession: (sessionId: string) => void;
+    onModelSelect: (selectionId: string) => void;
+    onSaveApiKey: (providerId: string, apiKey: string | undefined) => void;
 }
 
 export type PanelRole = 'user' | 'assistant' | 'tool';
@@ -31,6 +33,9 @@ export interface PanelState {
     workingDirectory?: string;
     sessions: PanelSession[];
     activeSessionId?: string;
+    providers: PanelProvider[];
+    modelOptions: PanelModelOption[];
+    activeModelOptionId?: string;
 }
 
 export interface PanelSession {
@@ -38,6 +43,20 @@ export interface PanelSession {
     title: string;
     createdAt: number;
     updatedAt: number;
+}
+
+export interface PanelProvider {
+    id: string;
+    label: string;
+    models: Array<{ id: string; label: string }>;
+    hasApiKey?: boolean;
+}
+
+export interface PanelModelOption {
+    id: string;
+    label: string;
+    providerId: string;
+    modelId: string;
 }
 
 export class CodexPanel implements vscode.Disposable {
@@ -96,6 +115,22 @@ export class CodexPanel implements vscode.Disposable {
             if (message?.type === 'sessions:delete' && typeof message.sessionId === 'string') {
                 callbacks.onDeleteSession(message.sessionId);
             }
+            if (message?.type === 'model:select' && typeof message.selectionId === 'string') {
+                callbacks.onModelSelect(message.selectionId);
+            }
+            if (
+                message?.type === 'provider:apikey:set' &&
+                typeof message.providerId === 'string' &&
+                typeof message.apiKey === 'string'
+            ) {
+                callbacks.onSaveApiKey(message.providerId, message.apiKey);
+            }
+            if (
+                message?.type === 'provider:apikey:clear' &&
+                typeof message.providerId === 'string'
+            ) {
+                callbacks.onSaveApiKey(message.providerId, undefined);
+            }
         }, undefined, this.disposables);
 
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
@@ -148,6 +183,7 @@ export class CodexPanel implements vscode.Disposable {
             <div class="workspace" id="workspaceLabel">Workspace: unknown</div>
             <div class="header-actions">
                 <button class="header-icon" id="sessionToggle" title="Sessions" aria-label="Sessions">☰</button>
+                <button class="header-icon" id="apiKeyToggle" title="API Keys" aria-label="API Keys">🔑</button>
             </div>
         </div>
     </header>
@@ -163,11 +199,25 @@ export class CodexPanel implements vscode.Disposable {
             <div class="sessions-panel-list" id="sessionsPanelList"></div>
         </div>
     </div>
+    <div class="apikey-overlay hidden" id="apiOverlay" role="dialog" aria-modal="true">
+        <div class="apikey-panel">
+            <div class="apikey-panel-header">
+                <div class="apikey-panel-title">API Keys</div>
+                <button class="apikey-close" id="apiClose" aria-label="Close API keys">×</button>
+            </div>
+            <div class="apikey-panel-body" id="apiList"></div>
+        </div>
+    </div>
     <section class="history" id="history"></section>
     <section class="composer">
         <textarea id="prompt" rows="3" placeholder="Ask IdSiberCoder..."></textarea>
-        <div class="actions">
-            <button id="send">Ask DeepSeek</button>
+        <div class="composer-bottom">
+            <div class="composer-model">
+                <select id="modelSelect" aria-label="Model"></select>
+            </div>
+            <div class="actions">
+                <button id="send">Send</button>
+            </div>
         </div>
     </section>
     <script src="${scriptUri}"></script>

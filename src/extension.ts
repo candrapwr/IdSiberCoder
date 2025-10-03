@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 import MarkdownIt from 'markdown-it';
 import { CodexPanel, PanelMessage, PanelSession } from './panels/CodexPanel';
-import { SettingsManager } from './config/SettingsManager';
+import { SettingsManager, ProviderSettingsSnapshot } from './config/SettingsManager';
+import { PROVIDERS, PROVIDER_LIST, ProviderId } from './config/providers';
 import { GeneralMCPHandler } from './handlers/GeneralMCPHandler';
 import { ToolRegistry } from './handlers/ToolCallHandler';
 import { FileManager, FileOperationResult } from './tools/FileManager';
-import { DeepSeekProvider, ToolDefinition } from './providers/DeepSeekProvider';
+import { DeepSeekProvider } from './providers/DeepSeekProvider';
+import { OpenAIProvider } from './providers/OpenAIProvider';
+import type { ToolDefinition, ChatProvider } from './providers/types';
 import type { PromptOutcome } from './handlers/GeneralMCPHandler';
 import type { ConversationMessage, MessageUsage, ToolFunctionCall } from './context/ContextManager';
 import { SessionManager } from './handlers/SessionManager';
@@ -228,31 +231,48 @@ export async function activate(context: vscode.ExtensionContext) {
 
     let { registry: toolRegistry, definitions: toolDefinitions } = buildTooling(fileManager);
 
-    let cachedProvider: DeepSeekProvider | undefined;
+    let cachedProvider: ChatProvider | undefined;
+    let cachedProviderId: ProviderId | undefined;
     let cachedKey: string | undefined;
-    let cachedBaseUrl = settings.baseUrl;
-    let cachedModel = settings.model;
+    let cachedBaseUrl = settings.providers[settings.provider].baseUrl;
+    let cachedModel = settings.providers[settings.provider].model;
 
-    const providerFactory = async () => {
-        const apiKey = await settingsManager.ensureApiKey();
+    const providerFactory = async (): Promise<ChatProvider> => {
+        const providerId = settings.provider;
+        const providerSettings = settings.providers[providerId];
+        const apiKey = await settingsManager.ensureApiKey(providerId);
         if (!apiKey) {
-            throw new Error('DeepSeek API key not configured. Set it via Settings → Extensions → IdSiberCoder.');
+            throw new Error(
+                `${PROVIDERS[providerId].label} API key not configured. Use the 🔑 API Keys panel or VS Code settings to add one.`
+            );
         }
 
         if (
             !cachedProvider ||
+            cachedProviderId !== providerId ||
             cachedKey !== apiKey ||
-            cachedBaseUrl !== settings.baseUrl ||
-            cachedModel !== settings.model
+            cachedBaseUrl !== providerSettings.baseUrl ||
+            cachedModel !== providerSettings.model
         ) {
-            cachedProvider = new DeepSeekProvider({
-                apiKey,
-                baseUrl: settings.baseUrl,
-                model: settings.model
-            });
+            if (providerId === 'deepseek') {
+                cachedProvider = new DeepSeekProvider({
+                    apiKey,
+                    baseUrl: providerSettings.baseUrl,
+                    model: providerSettings.model
+                });
+            } else if (providerId === 'openai') {
+                cachedProvider = new OpenAIProvider({
+                    apiKey,
+                    baseUrl: providerSettings.baseUrl,
+                    model: providerSettings.model
+                });
+            } else {
+                throw new Error(`Unsupported provider: ${providerId}`);
+            }
+            cachedProviderId = providerId;
             cachedKey = apiKey;
-            cachedBaseUrl = settings.baseUrl;
-            cachedModel = settings.model;
+            cachedBaseUrl = providerSettings.baseUrl;
+            cachedModel = providerSettings.model;
         }
 
         return cachedProvider;
@@ -295,6 +315,12 @@ export async function activate(context: vscode.ExtensionContext) {
             },
             onSwitchSession: (sessionId: string) => {
                 handleSwitchSession(sessionId);
+            },
+            onModelSelect: (selectionId: string) => {
+                handleModelSelect(selectionId);
+            },
+            onSaveApiKey: (providerId: string, apiKey: string | undefined) => {
+                handleSaveApiKey(providerId as ProviderId, apiKey);
             }
         });
 
@@ -443,11 +469,34 @@ export async function activate(context: vscode.ExtensionContext) {
             updatedAt: session.updatedAt
         }));
 
+    const toPanelProviders = () =>
+        PROVIDER_LIST.map((provider) => ({
+            id: provider.id,
+            label: provider.label,
+            models: provider.models.map((model) => ({ ...model })),
+            hasApiKey: Boolean(settings.apiKeys?.[provider.id])
+        }));
+
+    const MODEL_OPTION_SEPARATOR = '::';
+
+    const toPanelModelOptions = () =>
+        PROVIDER_LIST.flatMap((provider) =>
+            provider.models.map((model) => ({
+                id: `${provider.id}${MODEL_OPTION_SEPARATOR}${model.id}`,
+                label: `${model.id} (${provider.label})`,
+                providerId: provider.id,
+                modelId: model.id
+            }))
+        );
+
     const buildPanelState = () => ({
         messages: renderMessagesForPanel(),
         workingDirectory: workspaceFolder,
         sessions: toPanelSessions(),
-        activeSessionId: sessionManager.getActiveSessionId()
+        activeSessionId: sessionManager.getActiveSessionId(),
+        providers: toPanelProviders(),
+        modelOptions: toPanelModelOptions(),
+        activeModelOptionId: `${settings.provider}${MODEL_OPTION_SEPARATOR}${settings.providers[settings.provider]?.model}`
     });
 
     const updatePanelState = (panel: CodexPanel) => {
@@ -460,6 +509,15 @@ export async function activate(context: vscode.ExtensionContext) {
             return;
         }
         sessionManager.updateSessionMessages(sessionId, mcp.getConversation());
+    };
+
+    const refreshSettings = async () => {
+        settings = await settingsManager.getSettings();
+        cachedProvider = undefined;
+        cachedProviderId = undefined;
+        cachedKey = undefined;
+        cachedBaseUrl = settings.providers[settings.provider].baseUrl;
+        cachedModel = settings.providers[settings.provider].model;
     };
 
     function handleCreateSession() {
@@ -495,6 +553,76 @@ export async function activate(context: vscode.ExtensionContext) {
         if (session) {
             mcp.loadConversation(session.messages);
         }
+        const panel = ensurePanel();
+        panel.setLoading(false);
+        updatePanelState(panel);
+    }
+
+    async function handleModelSelect(selectionId: string) {
+        const [providerIdRaw, modelId] = selectionId.split(MODEL_OPTION_SEPARATOR);
+        if (!providerIdRaw || !modelId) {
+            vscode.window.showWarningMessage(`Model option ${selectionId} is not recognised.`);
+            return;
+        }
+        const providerId = providerIdRaw as ProviderId;
+        const metadata = PROVIDERS[providerId];
+        if (!metadata) {
+            vscode.window.showWarningMessage(`Unsupported provider: ${providerIdRaw}`);
+            return;
+        }
+        if (!metadata.models.some((model) => model.id === modelId)) {
+            vscode.window.showWarningMessage(`Model ${modelId} is not available for ${metadata.label}.`);
+            return;
+        }
+
+        // Update local snapshot immediately so UI refreshes without waiting on configuration writes.
+        const currentProviderConfig: ProviderSettingsSnapshot = settings.providers[providerId] ?? {
+            baseUrl: metadata.defaultBaseUrl,
+            model: metadata.defaultModel
+        };
+
+        const providerChanged = settings.provider !== providerId;
+        const modelChanged = currentProviderConfig.model !== modelId;
+
+        settings.provider = providerId;
+        settings.providers[providerId] = {
+            baseUrl: currentProviderConfig.baseUrl ?? metadata.defaultBaseUrl,
+            model: modelId
+        };
+
+        cachedProvider = undefined;
+        cachedProviderId = undefined;
+        cachedKey = undefined;
+        cachedBaseUrl = settings.providers[providerId].baseUrl;
+        cachedModel = settings.providers[providerId].model;
+
+        if (providerChanged) {
+            await settingsManager.updateProvider(providerId);
+        }
+        if (modelChanged || providerChanged) {
+            await settingsManager.updateModel(providerId, modelId);
+        }
+        await refreshSettings();
+        const panel = ensurePanel();
+        panel.setLoading(false);
+        updatePanelState(panel);
+    }
+
+    async function handleSaveApiKey(providerId: ProviderId, apiKey?: string) {
+        if (!PROVIDERS[providerId]) {
+            vscode.window.showWarningMessage(`Unsupported provider: ${providerId}`);
+            return;
+        }
+
+        if (apiKey && apiKey.trim()) {
+            await settingsManager.setApiKey(providerId, apiKey.trim());
+            vscode.window.showInformationMessage(`${PROVIDERS[providerId].label} API key saved.`);
+        } else {
+            await settingsManager.setApiKey(providerId, undefined);
+            vscode.window.showInformationMessage(`${PROVIDERS[providerId].label} API key cleared.`);
+        }
+
+        await refreshSettings();
         const panel = ensurePanel();
         panel.setLoading(false);
         updatePanelState(panel);
@@ -763,17 +891,21 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!event.affectsConfiguration('idSiberCoder')) {
             return;
         }
-        settings = await settingsManager.getSettings();
-        cachedProvider = undefined;
-        cachedBaseUrl = settings.baseUrl;
-        cachedModel = settings.model;
-        mcp.updateContextOptions({
-            enabled: settings.enableContextOptimization,
-            summaryThreshold: settings.contextSummaryThreshold,
-            summaryRetention: settings.contextSummaryRetention
-        });
-        mcp.resetConversation();
-        sessionManager.setDefaultSystemPrompt(systemPrompt);
+        const contextSettingsChanged =
+            event.affectsConfiguration('idSiberCoder.enableContextOptimization') ||
+            event.affectsConfiguration('idSiberCoder.contextSummaryThreshold') ||
+            event.affectsConfiguration('idSiberCoder.contextSummaryRetention');
+
+        await refreshSettings();
+
+        if (contextSettingsChanged) {
+            mcp.updateContextOptions({
+                enabled: settings.enableContextOptimization,
+                summaryThreshold: settings.contextSummaryThreshold,
+                summaryRetention: settings.contextSummaryRetention
+            });
+        }
+
         persistActiveSession();
         const panel = ensurePanel();
         updatePanelState(panel);

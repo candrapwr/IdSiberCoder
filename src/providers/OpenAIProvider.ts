@@ -3,16 +3,16 @@ import * as vscode from 'vscode';
 import type { ConversationMessage, MessageUsage } from '../context/ContextManager';
 import type { ChatProvider, ProviderResponse, ToolDefinition } from './types';
 
-export interface DeepSeekConfig {
+export interface OpenAIConfig {
     apiKey: string;
     baseUrl: string;
     model: string;
 }
 
-export class DeepSeekProvider implements ChatProvider {
+export class OpenAIProvider implements ChatProvider {
     private readonly client: AxiosInstance;
 
-    constructor(private readonly config: DeepSeekConfig) {
+    constructor(private readonly config: OpenAIConfig) {
         this.client = axios.create({
             baseURL: config.baseUrl.replace(/\/$/, ''),
             timeout: 60000
@@ -39,9 +39,9 @@ export class DeepSeekProvider implements ChatProvider {
                 }
                 if (toolCalls?.length) {
                     mapped.tool_calls = toolCalls.map((call) => ({
-                        id: call.id,
-                        type: call.type,
-                        function: call.function
+                        id: call?.id,
+                        type: call?.type,
+                        function: call?.function
                     }));
                 }
                 return mapped;
@@ -108,7 +108,7 @@ export class DeepSeekProvider implements ChatProvider {
             return {
                 message: {
                     role: 'assistant',
-                    content: `❌ DeepSeek error: ${friendly}`
+                    content: `❌ OpenAI error: ${friendly}`
                 },
                 raw: error
             };

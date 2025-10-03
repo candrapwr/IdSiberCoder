@@ -7,11 +7,12 @@ This document captures the technical shape of the IdSiberCoder extension so futu
 ```
 idSiberCoder/
 ├── src/
-│   ├── extension.ts            # Entry point – wires VS Code APIs to the MCP-style flow + session sync
+│   ├── extension.ts            # Entry point – wires VS Code APIs to the MCP-style flow + session/provider sync
+│   ├── config/                 # Settings manager and provider registry metadata
 │   ├── context/                # Conversation optimisation utilities
 │   ├── handlers/               # MCP-inspired coordinators (conversation, request, logging, tools, sessions)
 │   ├── panels/                 # Webview shell for the chat experience
-│   ├── providers/              # DeepSeek client wrapper
+│   ├── providers/              # DeepSeek/OpenAI clients plus shared provider types
 │   └── tools/                  # Workspace file operations consumed by the tool layer
 ├── media/                      # Webview assets (JS/CSS)
 ├── package.json                # Extension manifest, scripts, dependencies
@@ -21,16 +22,16 @@ idSiberCoder/
 
 ## Architecture Overview
 
-- **GeneralMCPHandler** mirrors the CLI app’s MCP core: it initialises conversation state, manages tool registries, and feeds DeepSeek responses back into the loop.
-- **RequestHandler** prepares the request payload, forwards the current transcript plus tool definitions to DeepSeek, and captures function-call output.
+- **GeneralMCPHandler** mirrors the CLI app’s MCP core: it initialises conversation state, manages tool registries, and feeds responses from the active provider back into the loop.
+- **RequestHandler** prepares the request payload, forwards the current transcript plus tool definitions to the provider, and captures function-call output.
 - **ConversationHandler** keeps the running transcript, applies context optimisation, records tool results as `role: "tool"` messages, and can reload saved histories when switching sessions.
 - **SessionManager** persists chat threads in `workspaceState`, derives human-readable titles, and swaps conversation state when users pick a different session.
-- **DeepSeekProvider** speaks directly to `/chat/completions`, sending structured tool definitions and unpacking returned tool calls (`tool_calls`) and usage/token stats.
-- **Webview Panel** renders assistant replies, token badges, collapsible tool outputs, and a dedicated sessions overlay for creating, switching, or deleting chats; it also exposes loading state back to the extension while requests are in flight.
+- **DeepSeekProvider** and **OpenAIProvider** implement a shared `ChatProvider` contract: each talks to `/chat/completions`, passes tool definitions, and normalises `tool_calls` + token usage, while surfacing provider-specific errors.
+- **Webview Panel** renders assistant replies, token badges, collapsible tool outputs, a dedicated sessions overlay, a header-driven API-key overlay, and a combined model dropdown; it also exposes loading state back to the extension while requests are in flight.
 
 ## Tool Definitions
 
-`buildTooling()` (inside `src/extension.ts`) declares the function metadata shared with DeepSeek. Current capabilities:
+`buildTooling()` (inside `src/extension.ts`) declares the function metadata shared with the active provider. Current capabilities:
 
 | Function        | Purpose                                                | Required Parameters            |
 |-----------------|---------------------------------------------------------|--------------------------------|
@@ -48,14 +49,14 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 ## Conversation Flow
 
 1. User prompt is appended to history and optimised.
-2. DeepSeek receives the transcript + tool definitions and returns either text or function calls.
+2. The selected provider receives the transcript + tool definitions and returns either text or function calls.
 3. When tool calls are present, parameters are parsed, executed locally, and the results are reinserted as `role:"tool"` messages with `tool_call_id` for continuity.
-4. The updated history is sent back to DeepSeek until no additional function calls are returned or `maxIterations` is reached.
+4. The updated history is sent back to the provider until no additional function calls are returned or `maxIterations` is reached.
 5. The webview reflects every step (assistant thinking, tool requests, final responses) and displays token usage badges.
 
 ## Configuration & Commands
 
-- **Settings**: `idSiberCoder.apiKey`, `baseUrl`, `model`, context optimisation switches, and `maxIterations` are surfaced through VS Code’s settings UI.
+- **Settings**: provider choice (`deepseek` or `openai`), per-provider base URLs/models, provider-specific API keys (stored in `SecretStorage`), context optimisation switches, and `maxIterations` are surfaced through VS Code’s settings UI.
 - **Commands**: `IdSiberCoder: Open Assistant` (webview) and `IdSiberCoder: Send Prompt` (prompt input) are registered in `package.json`.
 - **Build scripts**: `npm run compile` (TypeScript build), `npm run watch`, and `npm test` (placeholder).
 
@@ -63,11 +64,11 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 
 - Type declarations for Markdown rendering live in `src/types/markdown-it.d.ts`.
 - The extension uses TypeScript strict mode; run `npm run compile` before packaging.
-- Webview assets are plain JS/CSS – no bundler is currently wired in.
+- Webview assets are plain JS/CSS – no bundler is currently wired in. The composer exposes a single combined model dropdown, while sessions and API keys are managed through dedicated overlays in the header.
 - When adding new tools, update both `buildTooling()` definitions and the `FileManager` implementation, then surface them in the UI if user-facing controls are desired.
 
 ## Future Hooks
 
-- Additional providers can slot in by extending `DeepSeekProvider` or introducing a provider interface in `GeneralMCPHandler`.
+- Additional providers can slot in by implementing the shared `ChatProvider` contract and registering metadata in `src/config/providers.ts`.
 - Persisting conversation history or wiring context summaries into storage can reuse the CLI project’s session manager patterns.
 - The webview currently renders Markdown via `markdown-it`; theming can be extended with CSS variables exposed by VS Code.

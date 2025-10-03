@@ -33,20 +33,31 @@
     "configuration": {
       "title": "IdSiberCoder",
       "properties": {
-        "idSiberCoder.apiKey": {
+        "idSiberCoder.provider": {
           "type": "string",
-          "description": "DeepSeek API key. Leave blank to be prompted on first use.",
-          "default": ""
+          "description": "Default chat provider.",
+          "default": "deepseek",
+          "enum": ["deepseek", "openai"]
         },
-        "idSiberCoder.baseUrl": {
+        "idSiberCoder.deepseek.baseUrl": {
           "type": "string",
-          "description": "Optional custom DeepSeek API base URL.",
+          "description": "DeepSeek API base URL.",
           "default": "https://api.deepseek.com"
         },
-        "idSiberCoder.model": {
+        "idSiberCoder.deepseek.model": {
           "type": "string",
-          "description": "DeepSeek model identifier to use for completions.",
+          "description": "DeepSeek model identifier.",
           "default": "deepseek-chat"
+        },
+        "idSiberCoder.openai.baseUrl": {
+          "type": "string",
+          "description": "OpenAI API base URL.",
+          "default": "https://api.openai.com/v1"
+        },
+        "idSiberCoder.openai.model": {
+          "type": "string",
+          "description": "OpenAI model identifier.",
+          "default": "gpt-4o-mini"
         },
         "idSiberCoder.enableContextOptimization": {
           "type": "boolean",

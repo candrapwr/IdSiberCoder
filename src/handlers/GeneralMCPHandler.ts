@@ -9,7 +9,7 @@ import { ConversationHandler } from './ConversationHandler';
 import { ToolCallHandler, ToolRegistry } from './ToolCallHandler';
 import { LoggingHandler } from './LoggingHandler';
 import { ProviderFactory, RequestHandler } from './RequestHandler';
-import type { ToolDefinition } from '../providers/DeepSeekProvider';
+import type { ToolDefinition } from '../providers/types';
 
 export interface MCPOptions {
     systemPrompt: string;

@@ -1,9 +1,9 @@
 import type { ConversationMessage, MessageUsage, ToolFunctionCall } from '../context/ContextManager';
 import type { ConversationHandler } from './ConversationHandler';
-import type { DeepSeekProvider, ProviderResponse, ToolDefinition } from '../providers/DeepSeekProvider';
+import type { ProviderResponse, ToolDefinition, ChatProvider } from '../providers/types';
 import { LoggingHandler } from './LoggingHandler';
 
-export type ProviderFactory = () => Promise<DeepSeekProvider>;
+export type ProviderFactory = () => Promise<ChatProvider>;
 
 export interface PromptResult {
     message: ConversationMessage;
@@ -30,7 +30,7 @@ export class RequestHandler {
         const optimized = this.conversationHandler.optimize();
 
         const provider = await this.providerFactory();
-        this.logger.info('Dispatching prompt to DeepSeek', { tokenCount: optimized.messages.length });
+        this.logger.info('Dispatching prompt to provider', { tokenCount: optimized.messages.length });
 
         const response: ProviderResponse = await provider.sendChat(optimized.messages, this.toolDefinitions);
         this.conversationHandler.addAssistantMessage(
