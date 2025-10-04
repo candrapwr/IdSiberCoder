@@ -3,7 +3,7 @@
   "displayName": "IdSiberCoder",
   "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
   "version": "0.0.2",
-  "publisher": "idsiber",
+  "publisher": "DatasiberLab",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -16,10 +16,24 @@
     "url": "https://github.com/candrapwr/IdSiberCoder/issues"
   },
   "categories": [
-    "Other",
+    "Programming Languages",
+    "Snippets",
     "AI"
   ],
   "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "keywords": [
+    "ai",
+    "deepseek",
+    "codex",
+    "programming",
+    "assistant",
+    "chat"
+  ],
+  "preview": true,
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
@@ -117,7 +131,9 @@
     "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
     "watch": "tsc -w -p ./",
     "pretest": "npm run compile",
-    "test": "node ./out/test/runTests.js"
+    "test": "node ./out/test/runTests.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
   },
   "devDependencies": {
     "@types/node": "^20.11.30",

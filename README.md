@@ -6,7 +6,7 @@
 
 **Your friendly AI teammate right inside VS Code**
 
-[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue?style=for-the-badge&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=idsiber.idsibercoder)
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue?style=for-the-badge&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=DatasiberLab.idsibercoder)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 </div>
@@ -49,7 +49,7 @@ IdSiberCoder is the VS Code extension that brings the power of AI directly into 
 ## 🎯 Quick Start
 
 ### Installation
-1. Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=idsiber.idsibercoder)
+1. Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=DatasiberLab.idsibercoder)
 2. Or search for "IdSiberCoder" in VS Code Extensions
 
 ### First Time Setup
