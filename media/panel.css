@@ -470,6 +470,74 @@ body {
     margin-bottom: 0;
 }
 
+/* Welcome Screen Styling */
+.welcome-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 2rem 1rem;
+}
+
+.welcome-content {
+    text-align: center;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+.welcome-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--vscode-editor-foreground);
+    margin: 0;
+    letter-spacing: 0.02em;
+}
+
+.welcome-description {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--vscode-descriptionForeground);
+    margin: 0;
+}
+
+.welcome-features {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.8rem;
+    background: rgba(128, 128, 128, 0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+.feature-icon {
+    font-size: 0.9rem;
+    width: 20px;
+    text-align: center;
+}
+
+.feature-text {
+    font-size: 0.72rem;
+    color: var(--vscode-descriptionForeground);
+    text-align: left;
+    flex: 1;
+}
+
 /* Markdown Styling */
 .timeline-body ul,
 .timeline-body ol {

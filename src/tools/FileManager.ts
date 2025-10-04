@@ -105,9 +105,7 @@ export class FileManager {
             return {
                 success: true,
                 message: `Applied ${replacements} replacement(s) in ${target}.`,
-                path: target,
-                content,
-                size: Buffer.byteLength(content, 'utf8')
+                path: target
             };
         } catch (error: unknown) {
             return this.fail(error);

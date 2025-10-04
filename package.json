@@ -19,6 +19,7 @@
     "Other",
     "AI"
   ],
+  "icon": "media/icon.png",
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {

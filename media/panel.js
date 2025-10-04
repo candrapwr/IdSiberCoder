@@ -106,18 +106,53 @@ const renderMessage = (message, index, total) => {
     return container;
 };
 
+const renderWelcomeScreen = () => {
+    const welcomeContainer = document.createElement('div');
+    welcomeContainer.className = 'welcome-screen';
+    welcomeContainer.innerHTML = `
+        <div class="welcome-content">
+            <div class="welcome-icon">🤖</div>
+            <h2 class="welcome-title">Selamat Datang di IdSiberCoder</h2>
+            <p class="welcome-description">
+                Asisten AI coding Anda yang siap membantu dengan kode, debugging, dan solusi teknis.
+                Mulai percakapan dengan mengetik di bawah ini!
+            </p>
+            <div class="welcome-features">
+                <div class="feature-item">
+                    <span class="feature-icon">💬</span>
+                    <span class="feature-text">Chat dengan AI untuk bantuan coding</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">🔧</span>
+                    <span class="feature-text">Akses tools file dan workspace</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">📚</span>
+                    <span class="feature-text">Kelola multiple sessions</span>
+                </div>
+            </div>
+        </div>
+    `;
+    return welcomeContainer;
+};
+
 const renderHistory = () => {
     historyEl.innerHTML = '';
     const combined = [...baseMessages, ...extraMessages];
     const total = combined.length + (isLoading ? 1 : 0);
     historyEl.classList.toggle('history-empty', combined.length === 0 && !isLoading);
 
-    combined.forEach((message, index) => {
-        historyEl.appendChild(renderMessage(message, index, total));
-    });
+    // Show welcome screen if no messages and not loading
+    if (combined.length === 0 && !isLoading) {
+        historyEl.appendChild(renderWelcomeScreen());
+    } else {
+        combined.forEach((message, index) => {
+            historyEl.appendChild(renderMessage(message, index, total));
+        });
 
-    if (isLoading) {
-        historyEl.appendChild(renderLoadingEntry(combined.length === 0));
+        if (isLoading) {
+            historyEl.appendChild(renderLoadingEntry(combined.length === 0));
+        }
     }
     scrollHistoryToBottom();
 };

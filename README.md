@@ -1,46 +1,161 @@
-# IdSiberCoder
+# IdSiberCoder - Your AI Coding Assistant in VS Code
 
-IdSiberCoder is the VS Code companion app for the IdSiber ecosystem. Install it when you want a friendly AI teammate right next to your editor—one who understands the current workspace, talks through its reasoning, and can pitch in on daily coding chores without leaving your project window.
+<div align="center">
 
-## Highlights
+![IdSiberCoder](media/icon.png)
 
-- **Chat-first workflow** – open the IdSiberCoder panel and talk to your assistant like a coding partner.
-- **Workspace aware** – read, edit, append, delete, move, or copy files in the currently opened folder (with safe guards).
-- **DeepSeek superpowers** – leverages DeepSeek’s function-calling API to trigger tools automatically and narrate the results.
-- **Session juggling** – hop across previous conversations, create fresh ones, or prune old threads without leaving the sidebar.
-- **Provider flexibility** – switch between DeepSeek and OpenAI models on the fly, each with its own API key and model roster.
-- **Smart context** – keeps long sessions tidy by summarising older turns and only replaying the essentials.
-- **Clean timeline** – assistant thoughts, tool calls, and outputs are rendered in a collapsible, easy-to-scan history.
+**Your friendly AI teammate right inside VS Code**
 
-## Quick Start
+[![VS Code Marketplace](https://img.shields.io/badge/VS%20Code-Marketplace-blue?style=for-the-badge&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=idsiber.idsibercoder)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
-1. `npm install`
-2. Open the folder in VS Code and hit **F5** to launch the Extension Development Host.
-3. Run the command **IdSiberCoder: Open Assistant**.
-4. Enter the API key for your selected provider when prompted (DeepSeek or OpenAI), or open the **🔑 API Keys** overlay in the panel header to manage credentials later.
-5. Start chatting—try asking the assistant to inspect or edit a file in your workspace. Use the sessions icon in the panel header to revisit, rename, or delete earlier threads, and the model dropdown in the composer to pivot between DeepSeek and OpenAI.
+</div>
 
-## Why you might love it
+## 🚀 What is IdSiberCoder?
 
-- You prefer a conversational helper that stays inside VS Code.
-- You want to demo IdSiber’s multi-tool experience without spinning up the full CLI.
-- You enjoy keeping AI output and tool logs visible in one tidy panel.
+IdSiberCoder is the VS Code extension that brings the power of AI directly into your editor. Think of it as having a smart coding partner who understands your workspace, explains their reasoning, and helps with daily coding tasks without ever leaving your project window.
 
-## Roadmap Glimpse
+## ✨ Key Features
 
-- Additional provider adapters (Claude, OpenAI, Qwen, and friends)
-- Richer analysis and directory tools beyond core file ops
-- Session persistence and sharing
-- UI flourishes (diff viewers, inline actions, themed badges)
+### 🤖 **Smart AI Assistant**
+- Chat naturally with your AI coding partner
+- Choose between **DeepSeek** and **OpenAI** models
+- Get detailed explanations and reasoning
 
-## Contributing
+### 📁 **Workspace Aware**
+- Read, edit, and manage files in your current project
+- Safe file operations with built-in safeguards
+- Automatic workspace context understanding
 
-Issues, ideas, and pull requests are welcome. This project is still evolving—feel free to share feedback or reach out to the IdSiber team if you’d like to collaborate.
+### 🛠️ **Powerful Tools**
+- **Read files** - View any file in your workspace
+- **Edit files** - Make precise changes with find/replace
+- **Create files** - Write new files with AI-generated content
+- **Move/Copy files** - Reorganize your project structure
+- **List directories** - Explore your project folders
 
-Prefer a direct line? Email candrapwr@datasiber.com.
+### 💬 **Conversation Management**
+- Multiple chat sessions
+- Session history and persistence
+- Easy switching between conversations
+- Clean, organized chat interface
 
-Looking for architecture notes and implementation details? Check out [`DEVELOPMENT.md`](DEVELOPMENT.md).
+### ⚡ **Seamless Integration**
+- Native VS Code sidebar integration
+- VS Code theme compatibility
+- Fast and responsive interface
+- No external tools required
 
-## License
+## 🎯 Quick Start
 
-This project is licensed under the MIT License. See the accompanying [`LICENSE`](LICENSE) file for the full text.
+### Installation
+1. Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=idsiber.idsibercoder)
+2. Or search for "IdSiberCoder" in VS Code Extensions
+
+### First Time Setup
+1. Open the IdSiberCoder sidebar (click the IdSiber icon in the Activity Bar)
+2. Click the **🔑 API Keys** button in the panel header
+3. Enter your API key for either DeepSeek or OpenAI
+4. Start chatting with your AI assistant!
+
+## 🎮 How to Use
+
+### Basic Chat
+1. Open the IdSiberCoder sidebar
+2. Type your question or request in the input field
+3. Watch as your AI assistant responds and helps with your code
+
+### File Operations
+Ask your assistant to:
+- "Read the main.js file"
+- "Edit config.json to change the port to 3000"
+- "Create a new component called Button"
+- "List all files in the src directory"
+
+### Session Management
+- Use the sessions icon (📚) to manage conversations
+- Create new sessions for different topics
+- Switch between previous conversations
+- Rename or delete old sessions
+
+## 🎨 Interface Overview
+
+### Sidebar Features
+- **Chat History** - View your conversation timeline
+- **Input Field** - Type your messages and requests
+- **Model Selector** - Switch between AI providers
+- **API Keys** - Manage your authentication
+- **Session Manager** - Handle multiple conversations
+
+### Welcome Screen
+When you first open IdSiberCoder or start a new session, you'll see a friendly welcome screen with:
+- Quick start tips
+- Feature highlights
+- Example prompts to get you started
+
+## 🔧 Supported AI Providers
+
+### DeepSeek
+- DeepSeek Chat models
+- Cost-effective and powerful
+- Excellent for coding tasks
+
+### OpenAI
+- GPT-3.5, GPT-4, and other models
+- Industry-leading AI capabilities
+- Reliable and well-documented
+
+## 💡 Pro Tips
+
+### Best Practices
+- **Be specific** - The more context you provide, the better the assistance
+- **Use file paths** - Reference specific files for precise help
+- **Break down tasks** - Complex problems work better as multiple smaller requests
+- **Review changes** - Always check AI-generated code before committing
+
+### Example Prompts
+- "Can you help me debug this function? [paste code]"
+- "What's the best way to structure this React component?"
+- "Show me how to implement authentication in Node.js"
+- "Optimize this database query for better performance"
+
+## 🛠️ Requirements
+
+- **VS Code** 1.60.0 or higher
+- **API Key** for either DeepSeek or OpenAI
+- **Internet Connection** for AI model access
+
+## 🔒 Privacy & Security
+
+- Your API keys are stored securely in VS Code's secret storage
+- File operations only affect your current workspace
+- No data is sent to external servers except for AI provider APIs
+- All file operations include safety checks
+
+## 🤝 Support & Community
+
+### Getting Help
+- Check the [developer documentation](README_DEVELOPER.md) for technical details
+- Open an issue on our GitHub repository
+- Contact support: candrapwr@datasiber.com
+
+### Feedback & Suggestions
+We're constantly improving IdSiberCoder! Your feedback helps us make it better:
+- Feature requests
+- Bug reports
+- UI/UX suggestions
+- Performance improvements
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+<div align="center">
+
+**Happy coding with your AI partner!** 🎉
+
+*IdSiberCoder - Making coding more collaborative, one conversation at a time*
+
+</div>

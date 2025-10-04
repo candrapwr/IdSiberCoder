@@ -1,6 +1,6 @@
-# Development Reference
+# IdSiberCoder - Developer Documentation
 
-This document captures the technical shape of the IdSiberCoder extension so future updates stay aligned with the current architecture.
+This document contains technical documentation for IdSiberCoder extension development.
 
 ## Directory Map
 
@@ -23,7 +23,7 @@ idSiberCoder/
 
 ## Architecture Overview
 
-- **GeneralMCPHandler** mirrors the CLI app’s MCP core: it initialises conversation state, manages tool registries, and feeds responses from the active provider back into the loop.
+- **GeneralMCPHandler** mirrors the CLI app's MCP core: it initialises conversation state, manages tool registries, and feeds responses from the active provider back into the loop.
 - **RequestHandler** prepares the request payload, forwards the current transcript plus tool definitions to the provider, and captures function-call output.
 - **ConversationHandler** keeps the running transcript, applies context optimisation, records tool results as `role: "tool"` messages, and can reload saved histories when switching sessions.
 - **SessionManager** persists chat threads in `workspaceState`, derives human-readable titles, and swaps conversation state when users pick a different session.
@@ -57,7 +57,7 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 
 ## Configuration & Commands
 
-- **Settings**: provider choice (`deepseek` or `openai`), per-provider base URLs/models, provider-specific API keys (stored in `SecretStorage`), context optimisation switches, and `maxIterations` are surfaced through VS Code’s settings UI.
+- **Settings**: provider choice (`deepseek` or `openai`), per-provider base URLs/models, provider-specific API keys (stored in `SecretStorage`), context optimisation switches, and `maxIterations` are surfaced through VS Code's settings UI.
 - **Commands**: `IdSiberCoder: Open Assistant` (webview) and `IdSiberCoder: Send Prompt` (prompt input) are registered in `package.json`.
 - **Build scripts**: The extension is bundled using `esbuild`. Key scripts include `npm run esbuild` (development build) and `npm run esbuild-watch` (watches for changes). Packaging with `vsce package` automatically creates a minified production build.
 
@@ -71,5 +71,23 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 ## Future Hooks
 
 - Additional providers can slot in by implementing the shared `ChatProvider` contract and registering metadata in `src/config/providers.ts`.
-- Persisting conversation history or wiring context summaries into storage can reuse the CLI project’s session manager patterns.
+- Persisting conversation history or wiring context summaries into storage can reuse the CLI project's session manager patterns.
 - The webview currently renders Markdown via `markdown-it`; theming can be extended with CSS variables exposed by VS Code.
+
+## Quick Start for Development
+
+1. `npm install`
+2. Open the folder in VS Code and hit **F5** to launch the Extension Development Host.
+3. Run the command **IdSiberCoder: Open Assistant**.
+4. Enter the API key for your selected provider when prompted (DeepSeek or OpenAI), or open the **🔑 API Keys** overlay in the panel header to manage credentials later.
+5. Start chatting—try asking the assistant to inspect or edit a file in your workspace. Use the sessions icon in the panel header to revisit, rename, or delete earlier threads, and the model dropdown in the composer to pivot between DeepSeek and OpenAI.
+
+## Contributing
+
+Issues, ideas, and pull requests are welcome. This project is still evolving—feel free to share feedback or reach out to the IdSiber team if you'd like to collaborate.
+
+Prefer a direct line? Email candrapwr@datasiber.com.
+
+## License
+
+This project is licensed under the MIT License. See the accompanying [`LICENSE`](LICENSE) file for the full text.

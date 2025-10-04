@@ -352,7 +352,15 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(SidebarView.viewType, sidebarProvider)
+        vscode.window.registerWebviewViewProvider(
+            SidebarView.viewType,
+            sidebarProvider,
+            {
+                webviewOptions: {
+                    retainContextWhenHidden: true  // Kunci: Pertahankan konteks saat hidden
+                }
+            }
+        )
     );
 
     function escapeHtml(value = ''): string {
