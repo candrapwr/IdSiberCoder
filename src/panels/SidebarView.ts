@@ -132,11 +132,11 @@ export class SidebarView implements vscode.WebviewViewProvider {
 </head>
 <body>
     <header class="header">
-        <div class="header-row">
+        <div class="header-row" style="display: flex; justify-content: flex-end;">
             <div class="header-actions">
                 <button class="header-icon" id="sessionToggle" title="Sessions" aria-label="Sessions">☰</button>
                 <button class="header-icon" id="apiKeyToggle" title="API Keys" aria-label="API Keys">🔑</button>
-                <button class="header-icon" id="openPanel" title="Open in Panel" aria-label="Open in Panel">📋</button>
+                <button style="display: none;" class="header-icon" id="openPanel" title="Open in Panel" aria-label="Open in Panel">📋</button>
             </div>
         </div>
     </header>

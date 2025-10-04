@@ -6,6 +6,7 @@ const SECRET_PREFIX = 'idSiberCoder.apiKey.';
 export interface ProviderSettingsSnapshot {
     baseUrl: string;
     model: string;
+    maxTokens?: number;
 }
 
 export interface SettingsSnapshot {
@@ -60,7 +61,8 @@ export class SettingsManager {
             const model =
                 configuration.get<string>(`${providerId}.model`, metadata.defaultModel) ||
                 metadata.defaultModel;
-            providers[providerId] = { baseUrl, model };
+            const maxTokens = configuration.get<number>(`${providerId}.maxTokens`, metadata.defaultMaxTokens ?? 4096);
+            providers[providerId] = { baseUrl, model, maxTokens };
 
             let hasKey = false;
             let configuredKey: string | undefined;
@@ -160,6 +162,11 @@ export class SettingsManager {
     async updateBaseUrl(provider: ProviderId, baseUrl: string): Promise<void> {
         const configuration = this.getConfiguration();
         await configuration.update(`${provider}.baseUrl`, baseUrl, this.getUpdateTarget());
+    }
+
+    async updateMaxTokens(provider: ProviderId, maxTokens?: number): Promise<void> {
+        const configuration = this.getConfiguration();
+        await configuration.update(`${provider}.maxTokens`, maxTokens, this.getUpdateTarget());
     }
 
     async setApiKey(provider: ProviderId, apiKey?: string): Promise<void> {

@@ -238,6 +238,7 @@ export async function activate(context: vscode.ExtensionContext) {
     let cachedKey: string | undefined;
     let cachedBaseUrl = settings.providers[settings.provider].baseUrl;
     let cachedModel = settings.providers[settings.provider].model;
+    let cachedMaxTokens = settings.providers[settings.provider].maxTokens;
 
     const providerFactory = async (): Promise<ChatProvider> => {
         const providerId = settings.provider;
@@ -254,19 +255,22 @@ export async function activate(context: vscode.ExtensionContext) {
             cachedProviderId !== providerId ||
             cachedKey !== apiKey ||
             cachedBaseUrl !== providerSettings.baseUrl ||
-            cachedModel !== providerSettings.model
+            cachedModel !== providerSettings.model ||
+            (cachedMaxTokens ?? 4096) !== (providerSettings.maxTokens ?? 4096)
         ) {
             if (providerId === 'deepseek') {
                 cachedProvider = new DeepSeekProvider({
                     apiKey,
                     baseUrl: providerSettings.baseUrl,
-                    model: providerSettings.model
+                    model: providerSettings.model,
+                    maxTokens: providerSettings.maxTokens
                 });
             } else if (providerId === 'openai') {
                 cachedProvider = new OpenAIProvider({
                     apiKey,
                     baseUrl: providerSettings.baseUrl,
-                    model: providerSettings.model
+                    model: providerSettings.model,
+                    maxTokens: providerSettings.maxTokens
                 });
             } else {
                 throw new Error(`Unsupported provider: ${providerId}`);
@@ -275,6 +279,7 @@ export async function activate(context: vscode.ExtensionContext) {
             cachedKey = apiKey;
             cachedBaseUrl = providerSettings.baseUrl;
             cachedModel = providerSettings.model;
+            cachedMaxTokens = providerSettings.maxTokens;
         }
 
         return cachedProvider;
@@ -594,6 +599,7 @@ export async function activate(context: vscode.ExtensionContext) {
         cachedKey = undefined;
         cachedBaseUrl = settings.providers[settings.provider].baseUrl;
         cachedModel = settings.providers[settings.provider].model;
+        cachedMaxTokens = settings.providers[settings.provider].maxTokens;
     };
 
     function handleCreateSession() {
@@ -660,7 +666,8 @@ export async function activate(context: vscode.ExtensionContext) {
         settings.provider = providerId;
         settings.providers[providerId] = {
             baseUrl: currentProviderConfig.baseUrl ?? metadata.defaultBaseUrl,
-            model: modelId
+            model: modelId,
+            maxTokens: currentProviderConfig.maxTokens ?? metadata.defaultMaxTokens
         };
 
         cachedProvider = undefined;

@@ -7,6 +7,7 @@ export interface DeepSeekConfig {
     apiKey: string;
     baseUrl: string;
     model: string;
+    maxTokens?: number;
 }
 
 export class DeepSeekProvider implements ChatProvider {
@@ -49,9 +50,15 @@ export class DeepSeekProvider implements ChatProvider {
             stream: false
         };
 
+        payload.temperature = 0.4;
+
         if (tools.length) {
             payload.tools = tools;
             payload.tool_choice = 'auto';
+        }
+
+        if (this.config.maxTokens) {
+            payload.max_tokens = this.config.maxTokens;
         }
 
         try {

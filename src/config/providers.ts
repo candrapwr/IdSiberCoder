@@ -10,6 +10,7 @@ export interface ProviderMetadata {
     label: string;
     defaultBaseUrl: string;
     defaultModel: string;
+    defaultMaxTokens?: number;
     models: ProviderModel[];
 }
 
@@ -19,6 +20,7 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         label: 'DeepSeek',
         defaultBaseUrl: 'https://api.deepseek.com',
         defaultModel: 'deepseek-chat',
+        defaultMaxTokens: 7900,
         models: [
             { id: 'deepseek-chat', label: 'DeepSeek Chat' },
             { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner' }
@@ -29,6 +31,7 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         label: 'OpenAI',
         defaultBaseUrl: 'https://api.openai.com/v1',
         defaultModel: 'gpt-4o-mini',
+        defaultMaxTokens: 20000,
         models: [
             { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
             { id: 'gpt-5-nano', label: 'GPT-5 nano' }

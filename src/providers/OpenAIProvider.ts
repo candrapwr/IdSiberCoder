@@ -7,6 +7,7 @@ export interface OpenAIConfig {
     apiKey: string;
     baseUrl: string;
     model: string;
+    maxTokens?: number;
 }
 
 export class OpenAIProvider implements ChatProvider {
@@ -48,6 +49,10 @@ export class OpenAIProvider implements ChatProvider {
             }),
             stream: false
         };
+
+        if (this.config.maxTokens) {
+            payload.max_tokens = this.config.maxTokens;
+        }
 
         if (tools.length) {
             payload.tools = tools;
