@@ -23,7 +23,6 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultMaxTokens: 7900,
         models: [
             { id: 'deepseek-chat', label: 'DeepSeek Chat' },
-            { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner' }
         ]
     },
     openai: {
@@ -45,8 +44,8 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultMaxTokens: 8000,
         models: [
             { id: 'glm-4.5-flash', label: 'GLM-4.5-Flash' },
-            { id: 'glm-4', label: 'GLM-4' },
-            { id: 'glm-3-turbo', label: 'GLM-3-Turbo' }
+            { id: 'glm-4.5', label: 'GLM-4.5' },
+            { id: 'codegeex-4', label: 'GLM-Codegeex' }
         ]
     }
 };
