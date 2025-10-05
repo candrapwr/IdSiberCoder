@@ -1,4 +1,4 @@
-export type ProviderId = 'deepseek' | 'openai' | 'zhipuai' | 'grok' | 'claude';
+export type ProviderId = 'deepseek' | 'openai' | 'zhipuai' | 'grok' | 'claude' | 'novita';
 
 export interface ProviderModel {
     id: string;
@@ -55,7 +55,6 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultMaxTokens: 8000,
         models: [
             { id: 'grok-4-fast-non-reasoning', label: 'Grok-4-Fast' },
-            { id: 'grok-4-fast-reasoning', label: 'Grok-4-Fast-R' },
             { id: 'grok-4', label: 'Grok-4' },
             { id: 'grok-code-fast-1', label: 'Grok-Code-Fast' },
             { id: 'grok-3-mini', label: 'Grok-3-mini' }
@@ -69,9 +68,20 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultMaxTokens: 8000,
         models: [
             { id: 'claude-sonnet-4-5', label: 'Claude 4.5 Sonnet' },
-            { id: 'claude-sonnet-4-0', label: 'Claude 4 Sonnet' },
             { id: 'claude-3-7-sonnet-latest', label: 'Claude 3.7 Sonnet' },
             { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' }
+        ]
+    },
+    novita: {
+        id: 'novita',
+        label: 'Novita AI',
+        defaultBaseUrl: 'https://api.novita.ai/openai',
+        defaultModel: 'deepseek/deepseek-v3.1-terminus',
+        defaultMaxTokens: 8000,
+        models: [
+            { id: 'deepseek/deepseek-v3.1-terminus', label: 'DeepSeek v3.1 Terminus' },
+            { id: 'deepseek/deepseek-v3.2-exp', label: 'DeepSeek v3.2 Exp' },
+            { id: 'qwen/qwen3-coder-480b-a35b-instruct', label: 'Qwen Coder' }
         ]
     }
 };

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+- Added Novita AI provider support with deepseek/deepseek-v3.1-terminus model
+- Updated provider configuration to support 6 providers
+- Enhanced provider factory pattern for better extensibility
+- Updated documentation for Novita AI provider
+- Version bump to 0.3.0
+
 ## 0.2.0
 - Added Claude provider support with Claude-3-7-Sonnet-Latest model
 - Fixed Claude API integration with proper tool handling format

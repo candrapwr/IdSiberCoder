@@ -19,7 +19,7 @@ IdSiberCoder is the VS Code extension that brings the power of AI directly into 
 
 ### 🤖 **Smart AI Assistant**
 - Chat naturally with your AI coding partner
-- Choose between **DeepSeek**, **OpenAI**, **ZhiPu AI**, **Grok**, and **Claude** models
+- Choose between **DeepSeek**, **OpenAI**, **ZhiPu AI**, **Grok**, **Claude**, and **Novita AI** models
 - Get detailed explanations and reasoning
 
 ### 📁 **Workspace Aware**
@@ -83,7 +83,7 @@ Ask your assistant to:
 ### Sidebar Features
 - **Chat History** - View your conversation timeline
 - **Input Field** - Type your messages and requests
-- **Model Selector** - Switch between AI providers (DeepSeek, OpenAI, ZhiPu AI, Grok, Claude)
+- **Model Selector** - Switch between AI providers (DeepSeek, OpenAI, ZhiPu AI, Grok, Claude, Novita AI)
 - **API Keys** - Manage your authentication
 - **Session Manager** - Handle multiple conversations
 
@@ -120,6 +120,11 @@ When you first open IdSiberCoder or start a new session, you'll see a friendly w
 - Anthropic's advanced AI with excellent reasoning capabilities
 - Optimized for complex coding tasks and detailed explanations
 
+### Novita AI
+- DeepSeek models via Novita AI platform
+- High-performance AI models with DeepSeek technology
+- Optimized for coding tasks and technical assistance
+
 ## 💡 Pro Tips
 
 ### Best Practices
@@ -137,7 +142,7 @@ When you first open IdSiberCoder or start a new session, you'll see a friendly w
 ## 🛠️ Requirements
 
 - **VS Code** 1.60.0 or higher
-- **API Key** for DeepSeek, OpenAI, ZhiPu AI, Grok, or Claude
+- **API Key** for DeepSeek, OpenAI, ZhiPu AI, Grok, Claude, or Novita AI
 - **Internet Connection** for AI model access
 
 ## 🔒 Privacy & Security

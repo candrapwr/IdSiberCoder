@@ -23,10 +23,11 @@ idSiberCoder/
 │   ├── panels/                 # Webview shell for the chat experience
 │   │   ├── CodexPanel.ts
 │   │   └── SidebarView.ts
-│   ├── providers/              # DeepSeek/OpenAI/ZhiPuAI/Grok/Claude clients plus shared provider types
+│   ├── providers/              # DeepSeek/OpenAI/ZhiPuAI/Grok/Claude/NovitaAI clients plus shared provider types
 │   │   ├── ClaudeProvider.ts
 │   │   ├── DeepSeekProvider.ts
 │   │   ├── GrokProvider.ts
+│   │   ├── NovitaAIProvider.ts
 │   │   ├── OpenAIProvider.ts
 │   │   ├── ZhiPuAIProvider.ts
 │   │   └── types.ts
@@ -50,7 +51,7 @@ idSiberCoder/
 - **RequestHandler** prepares the request payload, forwards the current transcript plus tool definitions to the provider, and captures function-call output.
 - **ConversationHandler** keeps the running transcript, applies context optimisation, records tool results as `role: "tool"` messages, and can reload saved histories when switching sessions.
 - **SessionManager** persists chat threads in `workspaceState`, derives human-readable titles, and swaps conversation state when users pick a different session.
-- **DeepSeekProvider**, **OpenAIProvider**, **ZhiPuAIProvider**, **GrokProvider**, and **ClaudeProvider** implement a shared `ChatProvider` contract: each talks to their respective API endpoints, passes tool definitions, and normalises `tool_calls` + token usage, while surfacing provider-specific errors.
+- **DeepSeekProvider**, **OpenAIProvider**, **ZhiPuAIProvider**, **GrokProvider**, **ClaudeProvider**, and **NovitaAIProvider** implement a shared `ChatProvider` contract: each talks to their respective API endpoints, passes tool definitions, and normalises `tool_calls` + token usage, while surfacing provider-specific errors.
 - **Webview Panel** renders assistant replies, token badges, collapsible tool outputs, a dedicated sessions overlay, a header-driven API-key overlay, and a combined model dropdown; it also exposes loading state back to the extension while requests are in flight.
 
 ## Tool Definitions
@@ -80,7 +81,7 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 
 ## Configuration & Commands
 
-- **Settings**: provider choice (`deepseek`, `openai`, `zhipuai`, `grok`, or `claude`), per-provider base URLs/models, provider-specific API keys (stored in `SecretStorage`), context optimisation switches, and `maxIterations` are surfaced through VS Code's settings UI.
+- **Settings**: provider choice (`deepseek`, `openai`, `zhipuai`, `grok`, `claude`, or `novita`), per-provider base URLs/models, provider-specific API keys (stored in `SecretStorage`), context optimisation switches, and `maxIterations` are surfaced through VS Code's settings UI.
 - **Commands**: `IdSiberCoder: Open Assistant` (webview) and `IdSiberCoder: Send Prompt` (prompt input) are registered in `package.json`.
 - **Build scripts**: The extension is bundled using `esbuild`. Key scripts include `npm run esbuild` (development build) and `npm run esbuild-watch` (watches for changes). Packaging with `vsce package` automatically creates a minified production build.
 
@@ -96,6 +97,7 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 - Additional providers can slot in by implementing the shared `ChatProvider` contract and registering metadata in `src/config/providers.ts`.
 - **ZhiPu AI Provider** is now available with GLM-4.5-Flash as the default model, supporting high-performance Chinese language processing and coding tasks.
 - **Claude Provider** is now available with Claude-3-7-Sonnet-Latest as the default model, supporting advanced reasoning and detailed explanations for complex coding tasks.
+- **Novita AI Provider** is now available with deepseek/deepseek-v3.1-terminus as the default model, providing high-performance DeepSeek models via the Novita AI platform.
 - Persisting conversation history or wiring context summaries into storage can reuse the CLI project's session manager patterns.
 - The webview currently renders Markdown via `markdown-it`; theming can be extended with CSS variables exposed by VS Code.
 
@@ -104,8 +106,8 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 1. `npm install`
 2. Open the folder in VS Code and hit **F5** to launch the Extension Development Host.
 3. Run the command **IdSiberCoder: Open Assistant**.
-4. Enter the API key for your selected provider when prompted (DeepSeek, OpenAI, ZhiPu AI, or Grok), or open the **🔑 API Keys** overlay in the panel header to manage credentials later.
-5. Start chatting—try asking the assistant to inspect or edit a file in your workspace. Use the sessions icon in the panel header to revisit, rename, or delete earlier threads, and the model dropdown in the composer to pivot between DeepSeek, OpenAI, ZhiPu AI, and Grok.
+4. Enter the API key for your selected provider when prompted (DeepSeek, OpenAI, ZhiPu AI, Grok, Claude, or Novita AI), or open the **🔑 API Keys** overlay in the panel header to manage credentials later.
+5. Start chatting—try asking the assistant to inspect or edit a file in your workspace. Use the sessions icon in the panel header to revisit, rename, or delete earlier threads, and the model dropdown in the composer to pivot between DeepSeek, OpenAI, ZhiPu AI, Grok, Claude, and Novita AI.
 
 ## Contributing
 

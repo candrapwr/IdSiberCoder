@@ -2,7 +2,7 @@
   "name": "idsibercoder",
   "displayName": "IdSiberCoder",
   "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "publisher": "DatasiberLab",
   "engines": {
     "vscode": "^1.85.0"
@@ -33,7 +33,7 @@
     "assistant",
     "chat"
   ],
-  "preview": true,
+  "preview": false,
   "main": "./out/extension.js",
   "activationEvents": [
     
@@ -82,7 +82,7 @@
           "type": "string",
           "description": "Default chat provider.",
           "default": "deepseek",
-          "enum": ["deepseek", "openai", "zhipuai", "grok", "claude"]
+          "enum": ["deepseek", "openai", "zhipuai", "grok", "claude", "novita"]
         },
         "idSiberCoder.deepseek.baseUrl": {
           "type": "string",
@@ -177,6 +177,21 @@
         "idSiberCoder.claude.maxTokens": {
           "type": "number",
           "description": "Maximum tokens for Claude responses.",
+          "default": 8000
+        },
+        "idSiberCoder.novita.baseUrl": {
+          "type": "string",
+          "description": "Novita AI API base URL.",
+          "default": "https://api.novita.ai/openai"
+        },
+        "idSiberCoder.novita.model": {
+          "type": "string",
+          "description": "Novita AI model identifier.",
+          "default": "deepseek/deepseek-v3.1-terminus"
+        },
+        "idSiberCoder.novita.maxTokens": {
+          "type": "number",
+          "description": "Maximum tokens for Novita AI responses.",
           "default": 8000
         }
       }
