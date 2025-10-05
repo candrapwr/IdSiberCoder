@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0
+- Added Claude provider support with Claude-3-7-Sonnet-Latest model
+- Fixed Claude API integration with proper tool handling format
+- Updated provider configuration to support 5 providers
+- Enhanced documentation for Claude provider
+- Version bump to 0.2.0
+
 ## 0.1.0
 - Added Grok provider support with Grok-3-Mini model
 - Enhanced multi-provider architecture

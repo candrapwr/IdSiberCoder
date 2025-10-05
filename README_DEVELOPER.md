@@ -23,7 +23,8 @@ idSiberCoder/
 │   ├── panels/                 # Webview shell for the chat experience
 │   │   ├── CodexPanel.ts
 │   │   └── SidebarView.ts
-│   ├── providers/              # DeepSeek/OpenAI/ZhiPuAI/Grok clients plus shared provider types
+│   ├── providers/              # DeepSeek/OpenAI/ZhiPuAI/Grok/Claude clients plus shared provider types
+│   │   ├── ClaudeProvider.ts
 │   │   ├── DeepSeekProvider.ts
 │   │   ├── GrokProvider.ts
 │   │   ├── OpenAIProvider.ts
@@ -49,7 +50,7 @@ idSiberCoder/
 - **RequestHandler** prepares the request payload, forwards the current transcript plus tool definitions to the provider, and captures function-call output.
 - **ConversationHandler** keeps the running transcript, applies context optimisation, records tool results as `role: "tool"` messages, and can reload saved histories when switching sessions.
 - **SessionManager** persists chat threads in `workspaceState`, derives human-readable titles, and swaps conversation state when users pick a different session.
-- **DeepSeekProvider**, **OpenAIProvider**, **ZhiPuAIProvider**, and **GrokProvider** implement a shared `ChatProvider` contract: each talks to `/chat/completions`, passes tool definitions, and normalises `tool_calls` + token usage, while surfacing provider-specific errors.
+- **DeepSeekProvider**, **OpenAIProvider**, **ZhiPuAIProvider**, **GrokProvider**, and **ClaudeProvider** implement a shared `ChatProvider` contract: each talks to their respective API endpoints, passes tool definitions, and normalises `tool_calls` + token usage, while surfacing provider-specific errors.
 - **Webview Panel** renders assistant replies, token badges, collapsible tool outputs, a dedicated sessions overlay, a header-driven API-key overlay, and a combined model dropdown; it also exposes loading state back to the extension while requests are in flight.
 
 ## Tool Definitions
@@ -79,7 +80,7 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 
 ## Configuration & Commands
 
-- **Settings**: provider choice (`deepseek`, `openai`, `zhipuai`, or `grok`), per-provider base URLs/models, provider-specific API keys (stored in `SecretStorage`), context optimisation switches, and `maxIterations` are surfaced through VS Code's settings UI.
+- **Settings**: provider choice (`deepseek`, `openai`, `zhipuai`, `grok`, or `claude`), per-provider base URLs/models, provider-specific API keys (stored in `SecretStorage`), context optimisation switches, and `maxIterations` are surfaced through VS Code's settings UI.
 - **Commands**: `IdSiberCoder: Open Assistant` (webview) and `IdSiberCoder: Send Prompt` (prompt input) are registered in `package.json`.
 - **Build scripts**: The extension is bundled using `esbuild`. Key scripts include `npm run esbuild` (development build) and `npm run esbuild-watch` (watches for changes). Packaging with `vsce package` automatically creates a minified production build.
 
@@ -94,6 +95,7 @@ The `FileManager` class executes these requests; `edit_file` performs simple str
 
 - Additional providers can slot in by implementing the shared `ChatProvider` contract and registering metadata in `src/config/providers.ts`.
 - **ZhiPu AI Provider** is now available with GLM-4.5-Flash as the default model, supporting high-performance Chinese language processing and coding tasks.
+- **Claude Provider** is now available with Claude-3-7-Sonnet-Latest as the default model, supporting advanced reasoning and detailed explanations for complex coding tasks.
 - Persisting conversation history or wiring context summaries into storage can reuse the CLI project's session manager patterns.
 - The webview currently renders Markdown via `markdown-it`; theming can be extended with CSS variables exposed by VS Code.
 

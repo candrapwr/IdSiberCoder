@@ -1,4 +1,4 @@
-export type ProviderId = 'deepseek' | 'openai' | 'zhipuai' | 'grok';
+export type ProviderId = 'deepseek' | 'openai' | 'zhipuai' | 'grok' | 'claude';
 
 export interface ProviderModel {
     id: string;
@@ -59,6 +59,19 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
             { id: 'grok-4', label: 'Grok-4' },
             { id: 'grok-code-fast-1', label: 'Grok-Code-Fast' },
             { id: 'grok-3-mini', label: 'Grok-3-mini' }
+        ]
+    },
+    claude: {
+        id: 'claude',
+        label: 'Claude',
+        defaultBaseUrl: 'https://api.anthropic.com',
+        defaultModel: 'claude-3-7-sonnet-latest',
+        defaultMaxTokens: 8000,
+        models: [
+            { id: 'claude-sonnet-4-5', label: 'Claude 4.5 Sonnet' },
+            { id: 'claude-sonnet-4-0', label: 'Claude 4 Sonnet' },
+            { id: 'claude-3-7-sonnet-latest', label: 'Claude 3.7 Sonnet' },
+            { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' }
         ]
     }
 };
