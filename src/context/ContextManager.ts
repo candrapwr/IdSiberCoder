@@ -70,7 +70,7 @@ export class ContextManager implements Disposable {
         this.summaryThreshold = options.summaryThreshold ?? 12;
         this.summaryRetention = options.summaryRetention ?? 6;
         this.summaryPrefix = options.summaryPrefix ?? 'Context summary (auto-generated):';
-        this.summaryMaxLineLength = options.summaryMaxLineLength ?? 200;
+        this.summaryMaxLineLength = options.summaryMaxLineLength ?? 300;
     }
 
     dispose(): void {
@@ -229,9 +229,14 @@ export class ContextManager implements Disposable {
                     ? `${roleLabels[entry.role]}${entry.name ? ` (${entry.name})` : ''}`
                     : roleLabels[entry.role];
 
-            const content = entry.content.replace(/\s+/g, ' ').trim();
+            let content = entry.content.replace(/\s+/g, ' ').trim();
             if (!content) {
                 continue;
+            }
+
+            // Handle read_file tool results - truncate file content in summary
+            if (entry.role === 'tool' && entry.name === 'read_file' && content.includes('Tool result for read_file:')) {
+                content = content.replace(/Tool result for read_file:.*/s, 'Tool result for read_file: ...');
             }
 
             const bullet = this.truncate(`• ${label}: ${content}`);
