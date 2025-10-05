@@ -10,6 +10,7 @@ import { FileManager, FileOperationResult } from './tools/FileManager';
 import { DeepSeekProvider } from './providers/DeepSeekProvider';
 import { OpenAIProvider } from './providers/OpenAIProvider';
 import { ZhiPuAIProvider } from './providers/ZhiPuAIProvider';
+import { GrokProvider } from './providers/GrokProvider';
 import type { ToolDefinition, ChatProvider } from './providers/types';
 import type { PromptOutcome } from './handlers/GeneralMCPHandler';
 import type { ConversationMessage, MessageUsage, ToolFunctionCall } from './context/ContextManager';
@@ -275,6 +276,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 });
             } else if (providerId === 'zhipuai') {
                 cachedProvider = new ZhiPuAIProvider({
+                    apiKey,
+                    baseUrl: providerSettings.baseUrl,
+                    model: providerSettings.model,
+                    maxTokens: providerSettings.maxTokens
+                });
+            } else if (providerId === 'grok') {
+                cachedProvider = new GrokProvider({
                     apiKey,
                     baseUrl: providerSettings.baseUrl,
                     model: providerSettings.model,

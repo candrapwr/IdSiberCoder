@@ -19,7 +19,7 @@ IdSiberCoder is the VS Code extension that brings the power of AI directly into 
 
 ### 🤖 **Smart AI Assistant**
 - Chat naturally with your AI coding partner
-- Choose between **DeepSeek**, **OpenAI**, and **ZhiPu AI** models
+- Choose between **DeepSeek**, **OpenAI**, **ZhiPu AI**, and **Grok** models
 - Get detailed explanations and reasoning
 
 ### 📁 **Workspace Aware**
@@ -55,7 +55,7 @@ IdSiberCoder is the VS Code extension that brings the power of AI directly into 
 ### First Time Setup
 1. Open the IdSiberCoder sidebar (click the IdSiber icon in the Activity Bar)
 2. Click the **🔑 API Keys** button in the panel header
-3. Enter your API key for DeepSeek, OpenAI, or ZhiPu AI
+3. Enter your API key for DeepSeek, OpenAI, ZhiPu AI, or Grok
 4. Start chatting with your AI assistant!
 
 ## 🎮 How to Use
@@ -83,7 +83,7 @@ Ask your assistant to:
 ### Sidebar Features
 - **Chat History** - View your conversation timeline
 - **Input Field** - Type your messages and requests
-- **Model Selector** - Switch between AI providers (DeepSeek, OpenAI, ZhiPu AI)
+- **Model Selector** - Switch between AI providers (DeepSeek, OpenAI, ZhiPu AI, Grok)
 - **API Keys** - Manage your authentication
 - **Session Manager** - Handle multiple conversations
 
@@ -110,6 +110,11 @@ When you first open IdSiberCoder or start a new session, you'll see a friendly w
 - High-performance Chinese language models
 - Optimized for coding and reasoning tasks
 
+### Grok
+- Grok-3-Mini and other Grok models
+- Advanced AI models with strong reasoning capabilities
+- Optimized for complex problem-solving and coding assistance
+
 ## 💡 Pro Tips
 
 ### Best Practices
@@ -127,7 +132,7 @@ When you first open IdSiberCoder or start a new session, you'll see a friendly w
 ## 🛠️ Requirements
 
 - **VS Code** 1.60.0 or higher
-- **API Key** for DeepSeek, OpenAI, or ZhiPu AI
+- **API Key** for DeepSeek, OpenAI, ZhiPu AI, or Grok
 - **Internet Connection** for AI model access
 
 ## 🔒 Privacy & Security

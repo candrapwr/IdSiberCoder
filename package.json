@@ -2,7 +2,7 @@
   "name": "idsibercoder",
   "displayName": "IdSiberCoder",
   "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "publisher": "DatasiberLab",
   "engines": {
     "vscode": "^1.85.0"
@@ -82,7 +82,7 @@
           "type": "string",
           "description": "Default chat provider.",
           "default": "deepseek",
-          "enum": ["deepseek", "openai", "zhipuai"]
+          "enum": ["deepseek", "openai", "zhipuai", "grok"]
         },
         "idSiberCoder.deepseek.baseUrl": {
           "type": "string",
@@ -147,6 +147,21 @@
         "idSiberCoder.zhipuai.maxTokens": {
           "type": "number",
           "description": "Maximum tokens for ZhiPu AI responses.",
+          "default": 8000
+        },
+        "idSiberCoder.grok.baseUrl": {
+          "type": "string",
+          "description": "Grok API base URL.",
+          "default": "https://api.x.ai/v1"
+        },
+        "idSiberCoder.grok.model": {
+          "type": "string",
+          "description": "Grok model identifier.",
+          "default": "grok-3-mini"
+        },
+        "idSiberCoder.grok.maxTokens": {
+          "type": "number",
+          "description": "Maximum tokens for Grok responses.",
           "default": 8000
         }
       }

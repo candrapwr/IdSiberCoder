@@ -1,4 +1,4 @@
-export type ProviderId = 'deepseek' | 'openai' | 'zhipuai';
+export type ProviderId = 'deepseek' | 'openai' | 'zhipuai' | 'grok';
 
 export interface ProviderModel {
     id: string;
@@ -44,8 +44,19 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultMaxTokens: 8000,
         models: [
             { id: 'glm-4.5-flash', label: 'GLM-4.5-Flash' },
-            { id: 'glm-4.5', label: 'GLM-4.5' },
-            { id: 'codegeex-4', label: 'GLM-Codegeex' }
+            { id: 'glm-4.5', label: 'GLM-4.5' }
+        ]
+    },
+    grok: {
+        id: 'grok',
+        label: 'Grok',
+        defaultBaseUrl: 'https://api.x.ai/v1',
+        defaultModel: 'grok-3-mini',
+        defaultMaxTokens: 8000,
+        models: [
+            { id: 'grok-4-fast-non-reasoning', label: 'Grok-4-Fast' },
+            { id: 'grok-code-fast-1', label: 'Grok-Code-Fast' },
+            { id: 'grok-3-mini', label: 'Grok-3-mini' }
         ]
     }
 };
