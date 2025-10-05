@@ -2,7 +2,7 @@
   "name": "idsibercoder",
   "displayName": "IdSiberCoder",
   "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "publisher": "DatasiberLab",
   "engines": {
     "vscode": "^1.85.0"
@@ -117,7 +117,7 @@
         "idSiberCoder.contextSummaryRetention": {
           "type": "number",
           "description": "Number of latest turns kept verbatim when summarizing.",
-          "default": 8
+          "default": 12
         },
         "idSiberCoder.maxIterations": {
           "type": "number",
