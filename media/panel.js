@@ -434,7 +434,12 @@ function updateSendButton() {
 
 sendButton?.addEventListener('click', sendPrompt);
 promptEl?.addEventListener('keydown', (event) => {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
+        if (!promptEl.value.includes('\n')) {
+            event.preventDefault();
+            sendPrompt();
+        }
+    } else if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
         sendPrompt();
     }
 });

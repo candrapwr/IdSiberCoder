@@ -580,7 +580,7 @@ export async function activate(context: vscode.ExtensionContext) {
         PROVIDER_LIST.flatMap((provider) =>
             provider.models.map((model) => ({
                 id: `${provider.id}${MODEL_OPTION_SEPARATOR}${model.id}`,
-                label: `${model.id} (${provider.label})`,
+                label: `${model.label} (${provider.label})`,
                 providerId: provider.id,
                 modelId: model.id
             }))

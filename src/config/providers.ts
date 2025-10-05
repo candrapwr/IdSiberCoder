@@ -55,6 +55,8 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultMaxTokens: 8000,
         models: [
             { id: 'grok-4-fast-non-reasoning', label: 'Grok-4-Fast' },
+            { id: 'grok-4-fast-reasoning', label: 'Grok-4-Fast-R' },
+            { id: 'grok-4', label: 'Grok-4' },
             { id: 'grok-code-fast-1', label: 'Grok-Code-Fast' },
             { id: 'grok-3-mini', label: 'Grok-3-mini' }
         ]
