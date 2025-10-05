@@ -2,7 +2,7 @@
   "name": "idsibercoder",
   "displayName": "IdSiberCoder",
   "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "DatasiberLab",
   "engines": {
     "vscode": "^1.85.0"
@@ -35,6 +35,9 @@
   ],
   "preview": true,
   "main": "./out/extension.js",
+  "activationEvents": [
+    
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -50,7 +53,8 @@
         {
           "id": "idSiberCoder-sidebar",
           "name": "Chat",
-          "type": "webview"
+          "type": "webview",
+          "icon": "$(comment-discussion)"
         }
       ]
     },
@@ -78,7 +82,7 @@
           "type": "string",
           "description": "Default chat provider.",
           "default": "deepseek",
-          "enum": ["deepseek", "openai"]
+          "enum": ["deepseek", "openai", "zhipuai"]
         },
         "idSiberCoder.deepseek.baseUrl": {
           "type": "string",
@@ -113,7 +117,7 @@
         "idSiberCoder.contextSummaryRetention": {
           "type": "number",
           "description": "Number of latest turns kept verbatim when summarizing.",
-          "default": 6
+          "default": 8
         },
         "idSiberCoder.maxIterations": {
           "type": "number",
@@ -129,6 +133,21 @@
           "type": "number",
           "description": "Maximum tokens for OpenAI responses.",
           "default": 20000
+        },
+        "idSiberCoder.zhipuai.baseUrl": {
+          "type": "string",
+          "description": "ZhiPu AI API base URL.",
+          "default": "https://open.bigmodel.cn/api/paas/v4"
+        },
+        "idSiberCoder.zhipuai.model": {
+          "type": "string",
+          "description": "ZhiPu AI model identifier.",
+          "default": "glm-4.5-flash"
+        },
+        "idSiberCoder.zhipuai.maxTokens": {
+          "type": "number",
+          "description": "Maximum tokens for ZhiPu AI responses.",
+          "default": 8000
         }
       }
     }

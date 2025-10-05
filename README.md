@@ -19,7 +19,7 @@ IdSiberCoder is the VS Code extension that brings the power of AI directly into 
 
 ### 🤖 **Smart AI Assistant**
 - Chat naturally with your AI coding partner
-- Choose between **DeepSeek** and **OpenAI** models
+- Choose between **DeepSeek**, **OpenAI**, and **ZhiPu AI** models
 - Get detailed explanations and reasoning
 
 ### 📁 **Workspace Aware**
@@ -55,7 +55,7 @@ IdSiberCoder is the VS Code extension that brings the power of AI directly into 
 ### First Time Setup
 1. Open the IdSiberCoder sidebar (click the IdSiber icon in the Activity Bar)
 2. Click the **🔑 API Keys** button in the panel header
-3. Enter your API key for either DeepSeek or OpenAI
+3. Enter your API key for DeepSeek, OpenAI, or ZhiPu AI
 4. Start chatting with your AI assistant!
 
 ## 🎮 How to Use
@@ -83,7 +83,7 @@ Ask your assistant to:
 ### Sidebar Features
 - **Chat History** - View your conversation timeline
 - **Input Field** - Type your messages and requests
-- **Model Selector** - Switch between AI providers
+- **Model Selector** - Switch between AI providers (DeepSeek, OpenAI, ZhiPu AI)
 - **API Keys** - Manage your authentication
 - **Session Manager** - Handle multiple conversations
 
@@ -105,6 +105,11 @@ When you first open IdSiberCoder or start a new session, you'll see a friendly w
 - Industry-leading AI capabilities
 - Reliable and well-documented
 
+### ZhiPu AI
+- GLM-4.5-Flash and other GLM models
+- High-performance Chinese language models
+- Optimized for coding and reasoning tasks
+
 ## 💡 Pro Tips
 
 ### Best Practices
@@ -122,7 +127,7 @@ When you first open IdSiberCoder or start a new session, you'll see a friendly w
 ## 🛠️ Requirements
 
 - **VS Code** 1.60.0 or higher
-- **API Key** for either DeepSeek or OpenAI
+- **API Key** for DeepSeek, OpenAI, or ZhiPu AI
 - **Internet Connection** for AI model access
 
 ## 🔒 Privacy & Security

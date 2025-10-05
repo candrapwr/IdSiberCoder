@@ -1,4 +1,4 @@
-export type ProviderId = 'deepseek' | 'openai';
+export type ProviderId = 'deepseek' | 'openai' | 'zhipuai';
 
 export interface ProviderModel {
     id: string;
@@ -35,6 +35,18 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         models: [
             { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
             { id: 'gpt-5-nano', label: 'GPT-5 nano' }
+        ]
+    },
+    zhipuai: {
+        id: 'zhipuai',
+        label: 'ZhiPu AI',
+        defaultBaseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+        defaultModel: 'glm-4.5-flash',
+        defaultMaxTokens: 8000,
+        models: [
+            { id: 'glm-4.5-flash', label: 'GLM-4.5-Flash' },
+            { id: 'glm-4', label: 'GLM-4' },
+            { id: 'glm-3-turbo', label: 'GLM-3-Turbo' }
         ]
     }
 };

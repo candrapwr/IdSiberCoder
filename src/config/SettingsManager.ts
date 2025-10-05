@@ -37,12 +37,7 @@ export class SettingsManager {
         return `${SECRET_PREFIX}${provider}`;
     }
 
-    private async clearConfigurationApiKey(configuration: vscode.WorkspaceConfiguration): Promise<void> {
-        await configuration.update('apiKey', undefined, vscode.ConfigurationTarget.Global);
-        if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
-            await configuration.update('apiKey', undefined, vscode.ConfigurationTarget.Workspace);
-        }
-    }
+
 
     async getSettings(): Promise<SettingsSnapshot> {
         const configuration = this.getConfiguration();
@@ -64,21 +59,12 @@ export class SettingsManager {
             const maxTokens = configuration.get<number>(`${providerId}.maxTokens`, metadata.defaultMaxTokens ?? 4096);
             providers[providerId] = { baseUrl, model, maxTokens };
 
-            let hasKey = false;
-            let configuredKey: string | undefined;
-            if (providerId === 'deepseek') {
-                configuredKey = configuration.get<string>('apiKey')?.trim() || undefined;
-                hasKey = Boolean(configuredKey);
-            }
-
-            if (!hasKey) {
-                const stored = await this.secrets.get(this.getSecretKey(providerId));
-                hasKey = Boolean(stored?.trim());
-                if (providerId === provider) {
-                    activeApiKey = stored?.trim() || configuredKey;
-                }
-            } else if (providerId === provider) {
-                activeApiKey = configuredKey;
+            // Check for API key in secrets storage
+            const stored = await this.secrets.get(this.getSecretKey(providerId));
+            const hasKey = Boolean(stored?.trim());
+            
+            if (providerId === provider) {
+                activeApiKey = stored?.trim();
             }
 
             apiKeys[providerId] = hasKey;
@@ -111,11 +97,6 @@ export class SettingsManager {
     }
 
     async getApiKey(provider: ProviderId): Promise<string | undefined> {
-        const configuration = this.getConfiguration();
-        const configuredKey = configuration.get<string>('apiKey');
-        if (provider === 'deepseek' && configuredKey?.trim()) {
-            return configuredKey.trim();
-        }
         const stored = await this.secrets.get(this.getSecretKey(provider));
         return stored ?? undefined;
     }
@@ -142,10 +123,6 @@ export class SettingsManager {
     }
 
     async clearApiKey(provider: ProviderId): Promise<void> {
-        const configuration = this.getConfiguration();
-        if (provider === 'deepseek') {
-            await this.clearConfigurationApiKey(configuration);
-        }
         await this.secrets.delete(this.getSecretKey(provider));
     }
 
@@ -170,11 +147,7 @@ export class SettingsManager {
     }
 
     async setApiKey(provider: ProviderId, apiKey?: string): Promise<void> {
-        const configuration = this.getConfiguration();
         const trimmed = apiKey?.trim();
-        if (provider === 'deepseek') {
-            await this.clearConfigurationApiKey(configuration);
-        }
 
         if (trimmed) {
             await this.storeApiKey(provider, trimmed);

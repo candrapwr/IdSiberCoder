@@ -9,6 +9,7 @@ import { ToolRegistry } from './handlers/ToolCallHandler';
 import { FileManager, FileOperationResult } from './tools/FileManager';
 import { DeepSeekProvider } from './providers/DeepSeekProvider';
 import { OpenAIProvider } from './providers/OpenAIProvider';
+import { ZhiPuAIProvider } from './providers/ZhiPuAIProvider';
 import type { ToolDefinition, ChatProvider } from './providers/types';
 import type { PromptOutcome } from './handlers/GeneralMCPHandler';
 import type { ConversationMessage, MessageUsage, ToolFunctionCall } from './context/ContextManager';
@@ -267,6 +268,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 });
             } else if (providerId === 'openai') {
                 cachedProvider = new OpenAIProvider({
+                    apiKey,
+                    baseUrl: providerSettings.baseUrl,
+                    model: providerSettings.model,
+                    maxTokens: providerSettings.maxTokens
+                });
+            } else if (providerId === 'zhipuai') {
+                cachedProvider = new ZhiPuAIProvider({
                     apiKey,
                     baseUrl: providerSettings.baseUrl,
                     model: providerSettings.model,
