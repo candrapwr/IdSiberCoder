@@ -20,7 +20,8 @@ export class SidebarView implements vscode.WebviewViewProvider {
         activeSessionId: undefined,
         providers: [],
         modelOptions: [],
-        isProcessing: false
+        isProcessing: false,
+        totalTokens: 0
     };
 
     constructor(extensionUri: vscode.Uri, callbacks: SidebarCallbacks) {
@@ -93,12 +94,17 @@ export class SidebarView implements vscode.WebviewViewProvider {
     }
 
     public postState(state: PanelState): void {
-        this._currentState = { ...state };
-        this._view?.webview.postMessage({ type: 'state', state });
+        const totalTokens = typeof state.totalTokens === 'number' ? state.totalTokens : 0;
+        this._currentState = { ...state, totalTokens };
+        this._view?.webview.postMessage({ type: 'state', state: { ...state, totalTokens } });
     }
 
     public appendMessage(message: PanelMessage): void {
         this._currentState.messages = [...this._currentState.messages, message];
+        if (typeof message.tokens === 'number' && message.tokens > 0) {
+            const current = typeof this._currentState.totalTokens === 'number' ? this._currentState.totalTokens : 0;
+            this._currentState.totalTokens = current + message.tokens;
+        }
         this._view?.webview.postMessage({ type: 'message', message });
     }
 
@@ -132,7 +138,10 @@ export class SidebarView implements vscode.WebviewViewProvider {
 </head>
 <body>
     <header class="header">
-        <div class="header-row" style="display: flex; justify-content: flex-end;">
+        <div class="header-row">
+            <div class="header-left">
+                <span class="header-metric" id="tokenUsageLabel" aria-live="polite">Tokens 0</span>
+            </div>
             <div class="header-actions">
                 <button class="header-icon" id="sessionToggle" title="Sessions" aria-label="Sessions">☰</button>
                 <button class="header-icon" id="apiKeyToggle" title="API Keys" aria-label="API Keys">🔑</button>

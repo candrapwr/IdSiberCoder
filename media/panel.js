@@ -5,6 +5,7 @@ const promptEl = document.getElementById('prompt');
 const sendButton = document.getElementById('send');
 const workspaceLabel = document.getElementById('workspaceLabel');
 const modelSelect = document.getElementById('modelSelect');
+const tokenUsageLabel = document.getElementById('tokenUsageLabel');
 const sessionToggleButton = document.getElementById('sessionToggle');
 const sessionsOverlay = document.getElementById('sessionsOverlay');
 const sessionsListEl = document.getElementById('sessionsPanelList');
@@ -27,6 +28,7 @@ let activeModelOptionId;
 let providerInfos = [];
 let apiOverlayOpen = false;
 let isStopping = false;
+let totalTokenUsage = 0;
 
 const escapeHtml = (value = '') =>
     value
@@ -44,6 +46,32 @@ const ROLE_LABELS = {
     user: 'You',
     assistant: 'IdSiberCoder',
     tool: 'Tool'
+};
+
+const formatTokens = (value = 0) => {
+    if (!value || value <= 0) {
+        return '0';
+    }
+    if (value >= 1_000_000) {
+        return `${(value / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+    }
+    if (value >= 1_000) {
+        return `${(value / 1_000).toFixed(1).replace(/\.0$/, '')}K`;
+    }
+    return value.toLocaleString('id-ID');
+};
+
+const updateTokenUsageLabel = () => {
+    if (!tokenUsageLabel) {
+        return;
+    }
+    if (!totalTokenUsage) {
+        tokenUsageLabel.textContent = 'Tokens 0';
+        tokenUsageLabel.classList.add('is-empty');
+        return;
+    }
+    tokenUsageLabel.textContent = `Tokens ${formatTokens(totalTokenUsage)}`;
+    tokenUsageLabel.classList.remove('is-empty');
 };
 
 const renderMessage = (message, index, total) => {
@@ -497,6 +525,8 @@ window.addEventListener('message', (event) => {
         providerInfos = Array.isArray(state.providers) ? state.providers : [];
         modelOptions = Array.isArray(state.modelOptions) ? state.modelOptions : [];
         activeModelOptionId = state.activeModelOptionId;
+        totalTokenUsage = typeof state.totalTokens === 'number' ? state.totalTokens : 0;
+        updateTokenUsageLabel();
         
         // Handle isProcessing state
         if (state.isProcessing !== undefined) {
@@ -514,6 +544,10 @@ window.addEventListener('message', (event) => {
     }
     if (type === 'message') {
         addBaseMessage(message);
+        if (typeof message?.tokens === 'number' && message.tokens > 0) {
+            totalTokenUsage += message.tokens;
+            updateTokenUsageLabel();
+        }
     }
     if (type === 'fileResult') {
         addExtraMessage(message);
@@ -536,6 +570,7 @@ window.addEventListener('message', (event) => {
 document.addEventListener('DOMContentLoaded', () => {
     renderHistory();
     renderModelOptions();
+    updateTokenUsageLabel();
     
     // Notify extension that webview is ready
     setTimeout(() => {

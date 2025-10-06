@@ -40,6 +40,7 @@ export interface PanelState {
     modelOptions: PanelModelOption[];
     activeModelOptionId?: string;
     isProcessing?: boolean;
+    totalTokens?: number;
 }
 
 export interface PanelSession {
@@ -201,7 +202,10 @@ export class CodexPanel implements vscode.Disposable {
 <body>
     <header class="header">
         <div class="header-row">
-            <div class="workspace" id="workspaceLabel">Workspace: unknown</div>
+            <div class="header-left">
+                <div class="workspace" id="workspaceLabel">Workspace: unknown</div>
+                <span class="header-metric" id="tokenUsageLabel" aria-live="polite">Tokens 0</span>
+            </div>
             <div class="header-actions">
                 <button class="header-icon" id="sessionToggle" title="Sessions" aria-label="Sessions">☰</button>
                 <button class="header-icon" id="apiKeyToggle" title="API Keys" aria-label="API Keys">🔑</button>

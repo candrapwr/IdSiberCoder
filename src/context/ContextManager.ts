@@ -35,6 +35,7 @@ export interface ContextManagerOptions {
     summaryRetention?: number;
     summaryPrefix?: string;
     summaryMaxLineLength?: number;
+    summaryTokenThreshold?: number;
 }
 
 export interface OptimizationResult {
@@ -59,6 +60,7 @@ export class ContextManager implements Disposable {
     private summaryRetention: number;
     private summaryPrefix: string;
     private summaryMaxLineLength: number;
+    private summaryTokenThreshold?: number;
     private summaryLines: string[] = [];
     private summaryHashes = new Set<string>();
 
@@ -67,10 +69,11 @@ export class ContextManager implements Disposable {
         this.optimizedActions = new Set(options.actions ?? ['read_file']);
         this.maxInstances = options.maxInstances ?? 1;
         this.summaryEnabled = options.summaryEnabled ?? true;
-        this.summaryThreshold = options.summaryThreshold ?? 25;
-        this.summaryRetention = options.summaryRetention ?? 20;
+        this.summaryThreshold = options.summaryThreshold ?? 40;
+        this.summaryRetention = options.summaryRetention ?? 35;
         this.summaryPrefix = options.summaryPrefix ?? 'Context summary (auto-generated):';
         this.summaryMaxLineLength = options.summaryMaxLineLength ?? 300;
+        this.summaryTokenThreshold = options.summaryTokenThreshold;
     }
 
     dispose(): void {
@@ -107,6 +110,9 @@ export class ContextManager implements Disposable {
         }
         if (options.summaryMaxLineLength !== undefined) {
             this.summaryMaxLineLength = options.summaryMaxLineLength;
+        }
+        if (options.summaryTokenThreshold !== undefined) {
+            this.summaryTokenThreshold = options.summaryTokenThreshold;
         }
     }
 
@@ -167,8 +173,10 @@ export class ContextManager implements Disposable {
         const filtered = working.filter((_, idx) => !indicesToRemove.has(idx));
         const removed = working.length - filtered.length;
 
+        const forceSummary = this.summaryEnabled ? this.shouldForceSummaryByTokens(filtered) : false;
+
         const { summaryUpdated, messages: summarized } = this.summaryEnabled
-            ? this.applySummaries(filtered)
+            ? this.applySummaries(filtered, forceSummary)
             : { summaryUpdated: false, messages: filtered };
 
         return {
@@ -180,8 +188,11 @@ export class ContextManager implements Disposable {
         };
     }
 
-    private applySummaries(messages: ConversationMessage[]): { summaryUpdated: boolean; messages: ConversationMessage[] } {
-        if (messages.length <= this.summaryThreshold) {
+    private applySummaries(
+        messages: ConversationMessage[],
+        force: boolean
+    ): { summaryUpdated: boolean; messages: ConversationMessage[] } {
+        if (!force && messages.length <= this.summaryThreshold) {
             return { summaryUpdated: false, messages };
         }
 
@@ -202,6 +213,12 @@ export class ContextManager implements Disposable {
             ) {
                 startIndex -= 1;
             }
+        }
+
+        if (force && startIndex <= 1 && messages.length > 2) {
+            const maxStart = Math.max(1, messages.length - 1);
+            const suggested = Math.max(2, Math.floor(messages.length / 2));
+            startIndex = Math.min(suggested, maxStart);
         }
 
         const tail = messages.slice(startIndex);
@@ -257,7 +274,7 @@ export class ContextManager implements Disposable {
             };
             return {
                 summaryUpdated: false,
-                messages: [messages[0], summaryMessage, ...tail]
+                messages: this.mergeWithSummary(messages, summaryMessage, startIndex, tail)
             };
         }
 
@@ -270,8 +287,49 @@ export class ContextManager implements Disposable {
 
         return {
             summaryUpdated: true,
-            messages: [messages[0], summaryMessage, ...tail]
+            messages: this.mergeWithSummary(messages, summaryMessage, startIndex, tail)
         };
+    }
+
+    private shouldForceSummaryByTokens(messages: ConversationMessage[]): boolean {
+        if (!this.summaryTokenThreshold || this.summaryTokenThreshold <= 0) {
+            return false;
+        }
+        const lastTokens = this.getLastUsageTokens(messages);
+        return lastTokens >= this.summaryTokenThreshold;
+    }
+
+    private getLastUsageTokens(messages: ConversationMessage[]): number {
+        for (let index = messages.length - 1; index >= 0; index--) {
+            const usage = messages[index].usage;
+            if (!usage) {
+                continue;
+            }
+            if (typeof usage.totalTokens === 'number') {
+                return usage.totalTokens;
+            }
+            const prompt = typeof usage.promptTokens === 'number' ? usage.promptTokens : 0;
+            const completion = typeof usage.completionTokens === 'number' ? usage.completionTokens : 0;
+            if (prompt + completion > 0) {
+                return prompt + completion;
+            }
+        }
+        return 0;
+    }
+
+    private mergeWithSummary(
+        messages: ConversationMessage[],
+        summaryMessage: ConversationMessage,
+        startIndex: number,
+        tail: ConversationMessage[]
+    ): ConversationMessage[] {
+        if (!messages.length) {
+            return [summaryMessage];
+        }
+
+        const systemMessage = messages[0];
+        const remaining = startIndex === 0 ? tail.slice(1) : tail;
+        return [systemMessage, summaryMessage, ...remaining];
     }
 
     private truncate(value: string): string {

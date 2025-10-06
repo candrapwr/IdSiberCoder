@@ -45,6 +45,7 @@ const fileToolAlias: Record<string, string> = {
 
 const markdown = new MarkdownIt({ html: false, linkify: true, breaks: true });
 const CONTEXT_SUMMARY_PREFIX = 'Context summary (auto-generated)';
+const SUMMARY_TOKEN_THRESHOLD = 30000;
 
 const ensureString = (value: unknown, field: string): string => {
     if (typeof value === 'string' && value.trim().length > 0) {
@@ -327,7 +328,8 @@ export async function activate(context: vscode.ExtensionContext) {
         contextOptions: {
             enabled: settings.enableContextOptimization,
             summaryThreshold: settings.contextSummaryThreshold,
-            summaryRetention: settings.contextSummaryRetention
+            summaryRetention: settings.contextSummaryRetention,
+            summaryTokenThreshold: SUMMARY_TOKEN_THRESHOLD
         }
     });
 
@@ -568,6 +570,24 @@ export async function activate(context: vscode.ExtensionContext) {
         };
     };
 
+    const countTokens = (message: ConversationMessage): number => {
+        const usage = message.usage;
+        if (!usage) {
+            return 0;
+        }
+        if (typeof usage.totalTokens === 'number') {
+            return usage.totalTokens;
+        }
+        const prompt = typeof usage.promptTokens === 'number' ? usage.promptTokens : 0;
+        const completion = typeof usage.completionTokens === 'number' ? usage.completionTokens : 0;
+        return prompt + completion;
+    };
+
+    const computeTotalTokens = (): number =>
+        mcp
+            .getConversation()
+            .reduce((total, message) => total + countTokens(message), 0);
+
     const renderMessagesForPanel = (): PanelMessage[] =>
         mcp
             .getConversation()
@@ -609,7 +629,8 @@ export async function activate(context: vscode.ExtensionContext) {
         activeSessionId: sessionManager.getActiveSessionId(),
         providers: toPanelProviders(),
         modelOptions: toPanelModelOptions(),
-        activeModelOptionId: `${settings.provider}${MODEL_OPTION_SEPARATOR}${settings.providers[settings.provider]?.model}`
+        activeModelOptionId: `${settings.provider}${MODEL_OPTION_SEPARATOR}${settings.providers[settings.provider]?.model}`,
+        totalTokens: computeTotalTokens()
     });
 
     const updateSidebarState = () => {
@@ -1182,7 +1203,8 @@ export async function activate(context: vscode.ExtensionContext) {
             mcp.updateContextOptions({
                 enabled: settings.enableContextOptimization,
                 summaryThreshold: settings.contextSummaryThreshold,
-                summaryRetention: settings.contextSummaryRetention
+                summaryRetention: settings.contextSummaryRetention,
+                summaryTokenThreshold: SUMMARY_TOKEN_THRESHOLD
             });
         }
 
