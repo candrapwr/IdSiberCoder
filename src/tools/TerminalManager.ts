@@ -1,148 +1,57 @@
 import * as vscode from 'vscode';
+import { exec, ExecException } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 export interface TerminalOperationResult {
     success: boolean;
     message?: string;
     error?: string;
-    command?: string;
+    output?: string;
 }
 
 export class TerminalManager {
-    private terminal: vscode.Terminal | null = null;
     private outputChannel: vscode.OutputChannel;
-
+    private readonly MAX_OUTPUT_LENGTH = 1000;
     constructor() {
         this.outputChannel = vscode.window.createOutputChannel('IdSiberCoder CLI');
     }
 
-    /**
-     * Execute a command in VS Code terminal
-     * @param command The command to execute
-     * @param captureOutput Whether to capture output (limited functionality)
-     */
-    async executeCommand(command: string, captureOutput: boolean = false): Promise<TerminalOperationResult> {
-        try {
-            // Validate command for security
-            if (!this.isSafeCommand(command)) {
-                return {
-                    success: false,
-                    error: `Command "${command}" is not allowed for security reasons. Only basic file and project management commands are permitted.`
-                };
-            }
-
-            if (!this.terminal || this.terminal.exitStatus) {
-                this.terminal = vscode.window.createTerminal('IdSiberCoder CLI');
-            }
-            
-            this.terminal.show();
-            this.terminal.sendText(command);
-            
-            // Log to output channel for visibility
-            this.outputChannel.appendLine(`[${new Date().toISOString()}] Executed: ${command}`);
-            
-            if (captureOutput) {
-                // For commands where we might want to capture output, we can use a different approach
-                // This is limited due to terminal API constraints
-                return {
-                    success: true,
-                    message: `Command "${command}" executed in terminal. Output will be displayed in the terminal panel.`,
-                    command
-                };
-            }
-            
-            return {
-                success: true,
-                message: `Command "${command}" executed in terminal. Check the terminal panel for output.`,
-                command
-            };
-            
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error);
-            return {
-                success: false,
-                error: message
-            };
-        }
-    }
-
-    /**
-     * Execute a command and capture output using child_process (for safe commands only)
-     * @param command The command to execute
-     * @param args Command arguments
-     */
-    async executeAndCapture(command: string, args: string[] = []): Promise<TerminalOperationResult> {
-        try {
-            // Only allow safe commands for child_process execution
-            if (!this.isSafeCommandForCapture(command)) {
-                return {
-                    success: false,
-                    error: `Command "${command}" is not allowed for output capture. Only basic informational commands are permitted.`
-                };
-            }
-
-            const { exec } = await import('child_process');
-            
-            return new Promise((resolve) => {
-                exec(`${command} ${args.join(' ')}`.trim(), { 
-                    cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath 
-                }, (error, stdout, stderr) => {
-                    if (error) {
-                        resolve({
-                            success: false,
-                            error: stderr || error.message
-                        });
-                    } else {
-                        resolve({
-                            success: true,
-                            message: stdout || 'Command executed successfully',
-                            command: `${command} ${args.join(' ')}`.trim()
-                        });
-                    }
-                });
-            });
-            
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : String(error);
-            return {
-                success: false,
-                error: message
-            };
-        }
-    }
-
-    /**
-     * Check if a command is safe to execute in terminal
-     */
     private isSafeCommand(command: string): boolean {
         const safePatterns = [
-            /^git\s+(status|log|diff|branch|remote|fetch|pull|push|add|commit|clone)/i,
-            /^npm\s+(list|view|info|install|uninstall|run|test|start|build)/i,
-            /^yarn\s+(list|info|install|remove|run|test|start|build)/i,
-            /^pnpm\s+(list|info|install|remove|run|test|start|build)/i,
-            /^(ls|dir|pwd|cd|mkdir|rmdir|cp|copy|mv|move|rm|del|cat|type|more|less|head|tail|grep|find|which|where)/i,
-            /^node\s+/i,
+            /^git\s+(status|log|branch|show|diff|remote|fetch|pull|push|clone|init|add|commit|stash|tag|describe)/i,
+            /^npm\s+(install|list|view|info|search|outdated|audit|run|start|test|version|init)/i,
+            /^yarn\s+(install|list|info|search|outdated|audit|run|start|test|version|init)/i,
+            /^pnpm\s+(install|list|info|search|outdated|audit|run|start|test|version|init)/i,
+            /^composer\s+/i,
             /^php\s+/i,
             /^python\s+/i,
+            /^python3\s+/i,
+            /^node\s+/i,
+            /^(ls|dir|pwd|mkdir|cat|head|tail|grep|find|which|whereis|file|stat|du|df|free|uname|arch|whoami|hostname|date|cal|echo|printf)/i,
+            /^cd\s+/i,
             /^echo\s+/i,
-            /^date$/i,
-            /^whoami$/i
+            /^printf\s+/i
         ];
 
         const dangerousPatterns = [
             /rm\s+-rf/i,
-            /format\s+/i,
-            /shutdown/i,
-            /reboot/i,
-            /init\s+/i,
-            /dd\s+/i,
-            /mkfs/i,
-            /fdisk/i,
-            /chmod\s+[0-7]{3,4}\s+/i,
-            /chown\s+root/i,
+            /rm\s+-r\s+-f/i,
             /sudo\s+/i,
-            /su\s+/i,
-            /passwd/i,
-            /ssh-keygen/i
+            /chmod\s+[0-7]{3,4}\s+/i,
+            /chown\s+[^\s]+\s+[^\s]+\s+/i,
+            /dd\s+/i,
+            /mkfs\s+/i,
+            /fdisk\s+/i,
+            /format\s+/i,
+            /shutdown\s+/i,
+            /reboot\s+/i,
+            /poweroff\s+/i,
+            /killall\s+/i,
+            /pkill\s+/i,
+            /^>\s*\/dev\/null/i,
+            /\|\s*tee\s+/i
         ];
 
         // Check for dangerous patterns first
@@ -159,51 +68,92 @@ export class TerminalManager {
             }
         }
 
-        // If no pattern matches, consider it unsafe
+        // Default to unsafe for unknown commands
         return false;
     }
 
-    /**
-     * Check if a command is safe for output capture (more restrictive)
-     */
-    private isSafeCommandForCapture(command: string): boolean {
-        const safeCapturePatterns = [
-            /^git\s+(status|log|branch|remote|--version)/i,
-            /^npm\s+(list|view|info|--version)/i,
-            /^yarn\s+(list|info|--version)/i,
-            /^pnpm\s+(list|info|--version)/i,
-            /^(ls|dir|pwd|which|where|echo)/i,
-            /^node\s+--version$/i,
-            /^python\s+--version$/i,
-            /^date$/i,
-            /^whoami$/i
-        ];
+    private truncateOutput(output: string): string {
+        if (output.length <= this.MAX_OUTPUT_LENGTH) {
+            return output;
+        }
+        
+        const truncated = output.substring(0, this.MAX_OUTPUT_LENGTH);
+        return `${truncated}\n\n[Output truncated - ${output.length} characters total, showing first ${this.MAX_OUTPUT_LENGTH} characters]`;
+    }
 
-        for (const pattern of safeCapturePatterns) {
-            if (pattern.test(command)) {
-                return true;
+    async executeCommand(command: string, captureOutput: boolean = false): Promise<TerminalOperationResult> {
+        try {
+            const trimmedCommand = command.trim();
+            
+            if (!this.isSafeCommand(trimmedCommand)) {
+                return {
+                    success: false,
+                    error: `Command blocked for security: ${trimmedCommand}. Only safe development commands are allowed.`
+                };
             }
-        }
 
-        return false;
+            // SELALU gunakan child_process untuk semua commands yang aman
+            return await this.executeWithChildProcess(trimmedCommand);
+
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return {
+                success: false,
+                error: `Command execution failed: ${errorMessage}`
+            };
+        }
     }
 
-    /**
-     * Clear the terminal
-     */
-    clearTerminal(): void {
-        if (this.terminal) {
-            this.terminal.sendText('clear');
+    private async executeWithChildProcess(command: string): Promise<TerminalOperationResult> {
+        try {
+            const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            
+            this.outputChannel.appendLine(`Executing: ${command}`);
+            
+            const { stdout, stderr } = await execAsync(command, { 
+                cwd: workspacePath,
+                encoding: 'utf8',
+                timeout: 30000 // Timeout 30 detik
+            });
+
+            // Clean up the output
+            const cleanOutput = (stdout || stderr || '').trim();
+            const truncatedOutput = this.truncateOutput(cleanOutput);
+            
+            if (stderr && !stdout) {
+                this.outputChannel.appendLine(`Stderr: ${stderr}`);
+            } else if (stdout) {
+                this.outputChannel.appendLine(`Output: ${stdout.substring(0, 500)}...`); // Log hanya 500 karakter pertama
+            }
+
+            const result: TerminalOperationResult = {
+                success: true,
+                message: `Command executed successfully`,
+                output: truncatedOutput || 'Command executed with no output'
+            };
+            
+            return result;
+
+        } catch (error) {
+            const execError = error as ExecException;
+            const errorMessage = execError.message || 'Unknown error';
+            const errorOutput = (execError.stderr || execError.stdout || '').trim();
+            const truncatedError = this.truncateOutput(errorOutput);
+            
+            this.outputChannel.appendLine(`Error: ${errorMessage}`);
+            if (errorOutput) {
+                this.outputChannel.appendLine(`Error output: ${errorOutput.substring(0, 500)}...`);
+            }
+            
+            return {
+                success: false,
+                error: `Command failed: ${errorMessage}`,
+                output: truncatedError || 'No error details available'
+            };
         }
     }
 
-    /**
-     * Dispose resources
-     */
-    dispose(): void {
-        if (this.terminal) {
-            this.terminal.dispose();
-        }
+    dispose() {
         this.outputChannel.dispose();
     }
 }

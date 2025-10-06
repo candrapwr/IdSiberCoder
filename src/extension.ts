@@ -889,12 +889,20 @@ export async function activate(context: vscode.ExtensionContext) {
 
     const buildToolOutputs = (action: string, result: FileOperationResult | TerminalOperationResult) => {
         const lines: string[] = [];
+        
+        // Handle TerminalOperationResult specifically
+        if ('output' in result && result.output) {
+            lines.push(result.output);
+        }
+        
         if (result.message) {
             lines.push(result.message);
         }
+        
         if ('content' in result && result.content) {
             lines.push(result.content);
         }
+        
         if (!result.success && result.error) {
             lines.push(`Error: ${result.error}`);
         }
