@@ -2,7 +2,7 @@
   "name": "idsibercoder",
   "displayName": "IdSiberCoder",
   "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
-  "version": "0.3.3",
+  "version": "0.4.0",
   "publisher": "DatasiberLab",
   "engines": {
     "vscode": "^1.85.0"

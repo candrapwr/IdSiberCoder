@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+- Added CLI command execution tool (`execute_cli`) using VSCode Terminal API
+- Enhanced security with safe command validation and dangerous pattern blocking
+- Support for git, npm, yarn, pnpm, and project management commands
+- Added output capture for safe informational commands
+- Improved tool system architecture with TerminalManager class
+- Version bump to 0.4.0
+
 ## 0.3.0
 - Added Novita AI provider support with deepseek/deepseek-v3.1-terminus model
 - Updated provider configuration to support 6 providers

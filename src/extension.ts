@@ -7,6 +7,7 @@ import { PROVIDERS, PROVIDER_LIST, ProviderId } from './config/providers';
 import { GeneralMCPHandler } from './handlers/GeneralMCPHandler';
 import { ToolRegistry } from './handlers/ToolCallHandler';
 import { FileManager, FileOperationResult } from './tools/FileManager';
+import { TerminalManager, TerminalOperationResult } from './tools/TerminalManager';
 import { DeepSeekProvider } from './providers/DeepSeekProvider';
 import { OpenAIProvider } from './providers/OpenAIProvider';
 import { ZhiPuAIProvider } from './providers/ZhiPuAIProvider';
@@ -66,7 +67,7 @@ interface Tooling {
     definitions: ToolDefinition[];
 }
 
-const buildTooling = (fileManager: FileManager): Tooling => {
+const buildTooling = (fileManager: FileManager, terminalManager: TerminalManager): Tooling => {
     const registry: ToolRegistry = {
         read_file: async ({ file_path }) => fileManager.readFile(ensureString(file_path, 'file_path')),
         write_file: async ({ file_path, content }) => fileManager.writeFile(
@@ -92,7 +93,14 @@ const buildTooling = (fileManager: FileManager): Tooling => {
         edit_file: async ({ file_path, edits }) => fileManager.editFile(
             ensureString(file_path, 'file_path'),
             Array.isArray(edits) ? edits : []
-        )
+        ),
+        execute_cli: async ({ command, capture_output }) => {
+            const capture = capture_output === true;
+            return terminalManager.executeCommand(
+                ensureString(command, 'command'),
+                capture
+            );
+        }
     };
 
     const definitions: ToolDefinition[] = [
@@ -222,6 +230,27 @@ const buildTooling = (fileManager: FileManager): Tooling => {
                     required: ['file_path', 'edits']
                 }
             }
+        },
+        {
+            type: 'function',
+            function: {
+                name: 'execute_cli',
+                description: 'Execute a CLI command in VS Code terminal. Only safe commands are allowed for security.',
+                parameters: {
+                    type: 'object',
+                    properties: {
+                        command: { 
+                            type: 'string', 
+                            description: 'The command to execute. Only basic file operations, git, npm, and project management commands are allowed.' 
+                        },
+                        capture_output: { 
+                            type: 'boolean', 
+                            description: 'Whether to capture command output. Only works for safe informational commands.' 
+                        }
+                    },
+                    required: ['command']
+                }
+            }
         }
     ];
 
@@ -235,8 +264,9 @@ export async function activate(context: vscode.ExtensionContext) {
     const getWorkspaceFolder = () => vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     let workspaceFolder = getWorkspaceFolder();
     const fileManager = new FileManager(workspaceFolder ?? '');
+    const terminalManager = new TerminalManager();
 
-    let { registry: toolRegistry, definitions: toolDefinitions } = buildTooling(fileManager);
+    let { registry: toolRegistry, definitions: toolDefinitions } = buildTooling(fileManager, terminalManager);
 
     let cachedProvider: ChatProvider | undefined;
     let cachedProviderId: ProviderId | undefined;
@@ -828,14 +858,27 @@ export async function activate(context: vscode.ExtensionContext) {
                               .filter((edit) => edit.find.length > 0)
                         : []
                 };
+            case 'execute_cli':
+                return {
+                    command: parameters.command ?? '',
+                    capture_output: parameters.capture_output === true
+                };
             default:
                 return {};
         }
     };
 
-    const executeFileTool = async (action: string, params: Record<string, unknown>): Promise<FileOperationResult> => {
+    const isTerminalOperationResult = (value: unknown): value is TerminalOperationResult => {
+        if (!value || typeof value !== 'object') {
+            return false;
+        }
+        const candidate = value as Partial<TerminalOperationResult>;
+        return typeof candidate.success === 'boolean';
+    };
+
+    const executeTool = async (action: string, params: Record<string, unknown>): Promise<FileOperationResult | TerminalOperationResult> => {
         const result = await mcp.executeTool(action, params);
-        if (isFileOperationResult(result)) {
+        if (isFileOperationResult(result) || isTerminalOperationResult(result)) {
             return result;
         }
         return {
@@ -844,12 +887,12 @@ export async function activate(context: vscode.ExtensionContext) {
         };
     };
 
-    const buildToolOutputs = (action: string, result: FileOperationResult) => {
+    const buildToolOutputs = (action: string, result: FileOperationResult | TerminalOperationResult) => {
         const lines: string[] = [];
         if (result.message) {
             lines.push(result.message);
         }
-        if (result.content) {
+        if ('content' in result && result.content) {
             lines.push(result.content);
         }
         if (!result.success && result.error) {
@@ -931,10 +974,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
                 const args = parseToolArguments(call);
 
-                let result: FileOperationResult;
+                let result: FileOperationResult | TerminalOperationResult;
                 try {
                     const params = ensureToolParameters(normalizedAction, args);
-                    result = await executeFileTool(normalizedAction, params);
+                    result = await executeTool(normalizedAction, params);
                 } catch (error) {
                     const friendly = error instanceof Error ? error.message : String(error);
                     result = { success: false, error: friendly };
@@ -1046,7 +1089,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 dir_path: payload.path,
                 edits: payload.edits
             });
-            const result = await executeFileTool(action, params);
+            const result = await executeTool(action, params);
             
             // Check if cancellation was requested during the request
             if (cancellationTokenSource.token.isCancellationRequested) {
@@ -1177,7 +1220,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const workspaceWatcher = vscode.workspace.onDidChangeWorkspaceFolders(() => {
         workspaceFolder = getWorkspaceFolder();
         fileManager.setWorkspaceRoot(workspaceFolder ?? '');
-        const tooling = buildTooling(fileManager);
+        const tooling = buildTooling(fileManager, terminalManager);
         toolRegistry = tooling.registry;
         toolDefinitions = tooling.definitions;
         mcp.updateTools(toolRegistry, toolDefinitions);

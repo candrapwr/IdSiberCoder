@@ -68,6 +68,7 @@ idSiberCoder/
 | `move_file`     | Move or rename a file.                                  | `source_path`, `destination_path` |
 | `list_directory`| List directory contents (defaults to workspace root).   | Optional `dir_path`            |
 | `edit_file`     | Apply sequential find/replace edits to a file.          | `file_path`, `edits[] { find, replace }` |
+| `execute_cli`   | Execute CLI commands in VS Code terminal (safe commands only) | `command`                     |
 
 The `FileManager` class executes these requests; `edit_file` performs simple string replacements in-order.
 

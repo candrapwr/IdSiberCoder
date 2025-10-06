@@ -33,6 +33,7 @@ IdSiberCoder is the VS Code extension that brings the power of AI directly into 
 - **Create files** - Write new files with AI-generated content
 - **Move/Copy files** - Reorganize your project structure
 - **List directories** - Explore your project folders
+- **Execute CLI commands** - Run git, npm, yarn, and other safe commands directly from AI
 
 ### 💬 **Conversation Management**
 - Multiple chat sessions
