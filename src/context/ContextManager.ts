@@ -67,8 +67,8 @@ export class ContextManager implements Disposable {
         this.optimizedActions = new Set(options.actions ?? ['read_file']);
         this.maxInstances = options.maxInstances ?? 1;
         this.summaryEnabled = options.summaryEnabled ?? true;
-        this.summaryThreshold = options.summaryThreshold ?? 12;
-        this.summaryRetention = options.summaryRetention ?? 6;
+        this.summaryThreshold = options.summaryThreshold ?? 25;
+        this.summaryRetention = options.summaryRetention ?? 20;
         this.summaryPrefix = options.summaryPrefix ?? 'Context summary (auto-generated):';
         this.summaryMaxLineLength = options.summaryMaxLineLength ?? 300;
     }
