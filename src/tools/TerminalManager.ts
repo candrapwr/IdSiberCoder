@@ -92,7 +92,6 @@ export class TerminalManager {
                 };
             }
 
-            // SELALU gunakan child_process untuk semua commands yang aman
             return await this.executeWithChildProcess(trimmedCommand);
 
         } catch (error) {
@@ -128,7 +127,6 @@ export class TerminalManager {
 
             const result: TerminalOperationResult = {
                 success: true,
-                message: `Command executed successfully`,
                 output: truncatedOutput || 'Command executed with no output'
             };
             

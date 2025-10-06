@@ -89,6 +89,9 @@ export class SidebarView implements vscode.WebviewViewProvider {
                 case 'stopProcess':
                     this._callbacks.onStopProcess?.();
                     break;
+                case 'restartExtension':
+                    vscode.commands.executeCommand('workbench.action.reloadWindow');
+                    break;
             }
         });
     }
@@ -143,6 +146,7 @@ export class SidebarView implements vscode.WebviewViewProvider {
                 <span class="header-metric" id="tokenUsageLabel" aria-live="polite">Tokens 0</span>
             </div>
             <div class="header-actions">
+                <button class="header-icon" id="restartExtension" title="Restart Extension" aria-label="Restart Extension">🔄</button>
                 <button class="header-icon" id="sessionToggle" title="Sessions" aria-label="Sessions">☰</button>
                 <button class="header-icon" id="apiKeyToggle" title="API Keys" aria-label="API Keys">🔑</button>
                 <button style="display: none;" class="header-icon" id="openPanel" title="Open in Panel" aria-label="Open in Panel">📋</button>

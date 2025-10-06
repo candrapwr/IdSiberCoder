@@ -12,7 +12,7 @@ body {
 }
 
 .header {
-    padding: 0.55rem 1rem;
+    padding: 0.4rem 0.6rem;
     border-bottom: 1px solid var(--vscode-editorGroup-border);
 }
 
@@ -396,32 +396,32 @@ body {
 .history {
     flex: 1;
     overflow-y: auto;
-    padding: 0.8rem 1.1rem 1.1rem 1.1rem;
+    padding: 0.5rem 0.6rem 0.6rem 0.6rem;
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 0.4rem;
 }
 
 .timeline-entry {
     position: relative;
     display: block;
-    padding-bottom: 0.7rem;
+    padding-bottom: 0.4rem;
 }
 
 .timeline-entry.is-last {
-    padding-bottom: 0.2rem;
+    padding-bottom: 0.1rem;
 }
 
 
 .timeline-card {
     background: var(--vscode-editorWidget-background);
     border: 1px solid var(--vscode-editorWidget-border);
-    border-radius: 12px;
-    padding: 0.65rem 0.85rem;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+    padding: 0.4rem 0.6rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    gap: 0.45rem;
+    gap: 0.3rem;
     transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
@@ -482,7 +482,7 @@ body {
 }
 
 .timeline-body p {
-    margin: 0 0 0.35rem 0;
+    margin: 0 0 0.2rem 0;
 }
 
 .timeline-body p:last-child {
@@ -820,17 +820,24 @@ body {
 
 .tool-card .tool-body {
     border-top: 1px solid var(--vscode-editorGroup-border);
-    padding: 0.45rem 0 0.6rem;
+    padding: 0.5rem 0.6rem;
     line-height: 1.28;
     font-size: 0.72rem;
+    white-space: pre;
+    overflow-x: auto;
+    font-family: var(--vscode-editor-font-family, SFMono-Regular, Consolas, 'Liberation Mono', monospace);
+    background: linear-gradient(160deg, rgba(28, 32, 45, 0.85), rgba(16, 20, 28, 0.75));
+    border: 1px solid rgba(90, 110, 150, 0.35);
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
 }
 
 .composer {
     border-top: 1px solid var(--vscode-editorGroup-border);
-    padding: 0.6rem 1rem 0.9rem;
+    padding: 0.4rem 0.6rem 0.6rem;
     display: flex;
     flex-direction: column;
-    gap: 0.45rem;
+    gap: 0.35rem;
     background: linear-gradient(
         to bottom,
         rgba(110, 130, 160, 0.05),

@@ -46,7 +46,7 @@ const fileToolAlias: Record<string, string> = {
 
 const markdown = new MarkdownIt({ html: false, linkify: true, breaks: true });
 const CONTEXT_SUMMARY_PREFIX = 'Context summary (auto-generated)';
-const SUMMARY_TOKEN_THRESHOLD = 30000;
+const SUMMARY_TOKEN_THRESHOLD = 40000;
 
 const ensureString = (value: unknown, field: string): string => {
     if (typeof value === 'string' && value.trim().length > 0) {
@@ -596,7 +596,7 @@ export async function activate(context: vscode.ExtensionContext) {
         return {
             role: message.role as PanelMessage['role'],
             content: message.content,
-            html: markdown.render(message.content)
+            html: message.role === 'user' ? `<div style="white-space: pre-wrap;">${escapeHtml(message.content)}</div>` : markdown.render(message.content)
         };
     };
 

@@ -16,6 +16,7 @@ const apiOverlay = document.getElementById('apiOverlay');
 const apiCloseButton = document.getElementById('apiClose');
 const apiListEl = document.getElementById('apiList');
 const openPanelButton = document.getElementById('openPanel');
+const restartExtensionButton = document.getElementById('restartExtension');
 
 let baseMessages = [];
 const extraMessages = [];
@@ -409,7 +410,7 @@ const addExtraMessage = (message) => {
 };
 
 function sendPrompt() {
-    const prompt = promptEl.value.trim();
+    const prompt = promptEl.value.replace(/^\s*/, '').replace(/\s*$/, '');
     
     // If loading and not already stopping, stop the process
     if (isLoading && !isStopping) {
@@ -422,7 +423,7 @@ function sendPrompt() {
     // If not loading, send the prompt
     if (prompt && !isLoading) {
         vscode.postMessage({ type: 'prompt', prompt });
-        addBaseMessage({ role: 'user', content: prompt, html: `<p>${escapeHtml(prompt)}</p>` });
+        addBaseMessage({ role: 'user', content: prompt, html: `<div style="white-space: pre-wrap;">${escapeHtml(prompt)}</div>` });
         promptEl.value = '';
         promptEl.focus();
     }
@@ -484,6 +485,10 @@ apiKeyToggleButton?.addEventListener('click', () => {
     } else {
         openApiOverlay();
     }
+});
+
+restartExtensionButton?.addEventListener('click', () => {
+    vscode.postMessage({ type: 'restartExtension' });
 });
 
 sessionsOverlay?.addEventListener('click', (event) => {
