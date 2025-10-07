@@ -32,6 +32,8 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultModel: 'gpt-4o-mini',
         defaultMaxTokens: 20000,
         models: [
+            { id: 'gpt-5-codex', label: 'GPT-5 Codex' },
+            { id: 'codex-mini-latest', label: 'Codex Mini' },
             { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
             { id: 'gpt-5-nano', label: 'GPT-5 nano' }
         ]
