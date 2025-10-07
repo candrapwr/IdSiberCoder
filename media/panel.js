@@ -18,6 +18,22 @@ const apiListEl = document.getElementById('apiList');
 const openPanelButton = document.getElementById('openPanel');
 const restartExtensionButton = document.getElementById('restartExtension');
 
+const SCROLL_THRESHOLD = 24;
+let shouldAutoScroll = true;
+let isProgrammaticScroll = false;
+
+const setProgrammaticScroll = (value) => {
+    isProgrammaticScroll = value;
+};
+
+const isHistoryAtBottom = () => {
+    if (!historyEl) {
+        return true;
+    }
+    const distanceFromBottom = historyEl.scrollHeight - historyEl.scrollTop - historyEl.clientHeight;
+    return distanceFromBottom <= SCROLL_THRESHOLD;
+};
+
 let baseMessages = [];
 const extraMessages = [];
 let isLoading = false;
@@ -31,6 +47,15 @@ let apiOverlayOpen = false;
 let isStopping = false;
 let totalTokenUsage = 0;
 
+if (historyEl) {
+    historyEl.addEventListener('scroll', () => {
+        if (isProgrammaticScroll) {
+            return;
+        }
+        shouldAutoScroll = isHistoryAtBottom();
+    });
+}
+
 const escapeHtml = (value = '') =>
     value
         .replace(/&/g, '&amp;')
@@ -40,7 +65,12 @@ const escapeHtml = (value = '') =>
         .replace(/'/g, '&#039;');
 
 const scrollHistoryToBottom = () => {
+    if (!historyEl) {
+        return;
+    }
+    setProgrammaticScroll(true);
     historyEl.scrollTop = historyEl.scrollHeight;
+    setTimeout(() => setProgrammaticScroll(false), 0);
 };
 
 const ROLE_LABELS = {
@@ -151,6 +181,13 @@ const renderWelcomeScreen = () => {
 };
 
 const renderHistory = () => {
+    if (!historyEl) {
+        return;
+    }
+
+    const wasAtBottom = isHistoryAtBottom();
+    shouldAutoScroll = wasAtBottom;
+
     historyEl.innerHTML = '';
     const combined = [...baseMessages, ...extraMessages];
     const total = combined.length + (isLoading ? 1 : 0);
@@ -168,7 +205,9 @@ const renderHistory = () => {
             historyEl.appendChild(renderLoadingEntry(combined.length === 0));
         }
     }
-    scrollHistoryToBottom();
+    if (wasAtBottom) {
+        scrollHistoryToBottom();
+    }
 };
 
 const renderLoadingEntry = (isFirstEntry) => {
@@ -400,11 +439,15 @@ const closeApiOverlay = () => {
 };
 
 const addBaseMessage = (message) => {
+    const wasAtBottom = isHistoryAtBottom();
+    shouldAutoScroll = wasAtBottom;
     baseMessages = [...baseMessages, message];
     renderHistory();
 };
 
 const addExtraMessage = (message) => {
+    const wasAtBottom = isHistoryAtBottom();
+    shouldAutoScroll = wasAtBottom;
     extraMessages.push(message);
     renderHistory();
 };
@@ -522,7 +565,14 @@ openPanelButton?.addEventListener('click', () => {
 
 window.addEventListener('message', (event) => {
     const { type, state, message, value } = event.data;
+    if (!type || !historyEl) {
+        return;
+    }
+    if (!isProgrammaticScroll) {
+        shouldAutoScroll = isHistoryAtBottom();
+    }
     if (type === 'state') {
+        shouldAutoScroll = isHistoryAtBottom();
         baseMessages = state.messages ?? [];
         extraMessages.length = 0;
         sessions = Array.isArray(state.sessions) ? state.sessions : [];
@@ -548,6 +598,7 @@ window.addEventListener('message', (event) => {
         renderHistory();
     }
     if (type === 'message') {
+        shouldAutoScroll = isHistoryAtBottom();
         addBaseMessage(message);
         if (typeof message?.tokens === 'number' && message.tokens > 0) {
             totalTokenUsage += message.tokens;
@@ -555,15 +606,18 @@ window.addEventListener('message', (event) => {
         }
     }
     if (type === 'fileResult') {
+        shouldAutoScroll = isHistoryAtBottom();
         addExtraMessage(message);
     }
     if (type === 'loading') {
+        shouldAutoScroll = isHistoryAtBottom();
         isLoading = Boolean(value);
         isStopping = false; // Reset stopping state when loading state changes
         updateSendButton();
         renderHistory();
     }
     if (type === 'processStopped') {
+        shouldAutoScroll = isHistoryAtBottom();
         isLoading = false;
         isStopping = false;
         updateSendButton();
