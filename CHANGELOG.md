@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+- Added Google Gemini provider
+- Implemented Gemini API integration with proper format conversion from OpenAI format
+- Added tool calling support for Gemini's unique function call format
+- Enhanced provider factory pattern for better extensibility
+- Updated documentation for Google Gemini provider
+- Version bump to 0.5.0
+
 ## 0.4.0
 - Added CLI command execution tool (`execute_cli`) using VSCode Terminal API
 - Enhanced security with safe command validation and dangerous pattern blocking

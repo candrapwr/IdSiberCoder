@@ -1,4 +1,4 @@
-export type ProviderId = 'deepseek' | 'openai' | 'zhipuai' | 'grok' | 'claude' | 'novita';
+export type ProviderId = 'deepseek' | 'openai' | 'zhipuai' | 'grok' | 'claude' | 'novita' | 'gemini';
 
 export interface ProviderModel {
     id: string;
@@ -15,6 +15,18 @@ export interface ProviderMetadata {
 }
 
 export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
+    gemini: {
+        id: 'gemini',
+        label: 'Google Gemini',
+        defaultBaseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+        defaultModel: 'gemini-2.0-flash-exp',
+        defaultMaxTokens: 8000,
+        models: [
+            { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+            { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
+            { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' }
+        ]
+    },
     deepseek: {
         id: 'deepseek',
         label: 'DeepSeek',

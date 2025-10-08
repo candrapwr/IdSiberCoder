@@ -2,7 +2,7 @@
   "name": "idsibercoder",
   "displayName": "IdSiberCoder",
   "description": "VS Code extension that mirrors the IdSiber AI Codex experience with DeepSeek integration, context optimization, and workspace-aware tooling.",
-  "version": "0.4.6",
+  "version": "0.5.0",
   "publisher": "DatasiberLab",
   "engines": {
     "vscode": "^1.85.0"
@@ -82,7 +82,7 @@
           "type": "string",
           "description": "Default chat provider.",
           "default": "deepseek",
-          "enum": ["deepseek", "openai", "zhipuai", "grok", "claude", "novita"]
+          "enum": ["deepseek", "openai", "zhipuai", "grok", "claude", "novita", "gemini"]
         },
         "idSiberCoder.deepseek.baseUrl": {
           "type": "string",
@@ -112,12 +112,12 @@
         "idSiberCoder.contextSummaryThreshold": {
           "type": "number",
           "description": "Number of turns before summarization begins.",
-          "default": 35
+          "default": 20
         },
         "idSiberCoder.contextSummaryRetention": {
           "type": "number",
           "description": "Number of latest turns kept verbatim when summarizing.",
-          "default": 30
+          "default": 15
         },
         "idSiberCoder.maxIterations": {
           "type": "number",
@@ -192,6 +192,21 @@
         "idSiberCoder.novita.maxTokens": {
           "type": "number",
           "description": "Maximum tokens for Novita AI responses.",
+          "default": 8000
+        },
+        "idSiberCoder.gemini.baseUrl": {
+          "type": "string",
+          "description": "Google Gemini API base URL.",
+          "default": "https://generativelanguage.googleapis.com/v1beta"
+        },
+        "idSiberCoder.gemini.model": {
+          "type": "string",
+          "description": "Google Gemini model identifier.",
+          "default": "gemini-2.0-flash"
+        },
+        "idSiberCoder.gemini.maxTokens": {
+          "type": "number",
+          "description": "Maximum tokens for Google Gemini responses.",
           "default": 8000
         }
       }

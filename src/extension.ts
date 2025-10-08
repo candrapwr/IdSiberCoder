@@ -14,6 +14,7 @@ import { ZhiPuAIProvider } from './providers/ZhiPuAIProvider';
 import { GrokProvider } from './providers/GrokProvider';
 import { ClaudeProvider } from './providers/ClaudeProvider';
 import { NovitaAIProvider } from './providers/NovitaAIProvider';
+import { GeminiProvider } from './providers/GeminiProvider';
 import type { ToolDefinition, ChatProvider } from './providers/types';
 import type { PromptOutcome } from './handlers/GeneralMCPHandler';
 import type { ConversationMessage, MessageUsage, ToolFunctionCall } from './context/ContextManager';
@@ -330,6 +331,13 @@ export async function activate(context: vscode.ExtensionContext) {
                 });
             } else if (providerId === 'novita') {
                 cachedProvider = new NovitaAIProvider({
+                    apiKey,
+                    baseUrl: providerSettings.baseUrl,
+                    model: providerSettings.model,
+                    maxTokens: providerSettings.maxTokens
+                });
+            } else if (providerId === 'gemini') {
+                cachedProvider = new GeminiProvider({
                     apiKey,
                     baseUrl: providerSettings.baseUrl,
                     model: providerSettings.model,
