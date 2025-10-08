@@ -247,6 +247,24 @@ export class ContextManager implements Disposable {
                     : roleLabels[entry.role];
 
             let content = entry.content.replace(/\s+/g, ' ').trim();
+
+            if(entry.role === 'assistant'){
+                let concatTool = '';
+                if(entry.toolCalls){
+                    for (const entryTool of entry.toolCalls) {
+                        const tcName = entryTool.function?.name;
+                        let tcContent = '';
+                        if(tcName != 'edit_file' && tcName != 'write_file'){
+                            tcContent = JSON.stringify(entryTool.function?.arguments);
+                        }else{
+                            tcContent = this.limitJsonString(entryTool.function?.arguments,200);
+                        }
+                        concatTool += `\nCall Tool ${tcName} : ${tcContent}`;
+                    }
+                }
+                content = (content)? `${content}${concatTool}`: '';
+            }
+
             if (!content) {
                 continue;
             }
@@ -377,5 +395,10 @@ export class ContextManager implements Disposable {
     private formatSummaryContent(): string {
         const header = this.summaryPrefix.endsWith(':') ? this.summaryPrefix : `${this.summaryPrefix}:`;
         return `${header}\n${this.summaryLines.join('\n')}`;
+    }
+
+    private limitJsonString(jsonObj: any, maxLength = 500) {
+        const str = JSON.stringify(jsonObj || {});
+        return str.length <= maxLength ? str : str.slice(0, maxLength - 3) + '...';
     }
 }
