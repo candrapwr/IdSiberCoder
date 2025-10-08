@@ -19,28 +19,8 @@ export class TerminalManager {
     }
 
     private isSafeCommand(command: string): boolean {
-        const safePatterns = [
-            /^git\s+(status|log|branch|show|diff|remote|fetch|pull|push|clone|init|add|commit|stash|tag|describe)/i,
-            /^npm\s+(install|list|view|info|search|outdated|audit|run|start|test|version|init)/i,
-            /^yarn\s+(install|list|info|search|outdated|audit|run|start|test|version|init)/i,
-            /^pnpm\s+(install|list|info|search|outdated|audit|run|start|test|version|init)/i,
-            /^composer\s+/i,
-            /^php\s+/i,
-            /^python\s+/i,
-            /^python3\s+/i,
-            /^node\s+/i,
-            /^(ls|dir|pwd|mkdir|cat|head|tail|grep|find|which|whereis|file|stat|du|df|free|uname|arch|whoami|hostname|date|cal|echo|printf)/i,
-            /^cd\s+/i,
-            /^echo\s+/i,
-            /^printf\s+/i
-        ];
-
         const dangerousPatterns = [
-            /rm\s+-rf/i,
-            /rm\s+-r\s+-f/i,
             /sudo\s+/i,
-            /chmod\s+[0-7]{3,4}\s+/i,
-            /chown\s+[^\s]+\s+[^\s]+\s+/i,
             /dd\s+/i,
             /mkfs\s+/i,
             /fdisk\s+/i,
@@ -48,8 +28,6 @@ export class TerminalManager {
             /shutdown\s+/i,
             /reboot\s+/i,
             /poweroff\s+/i,
-            /killall\s+/i,
-            /pkill\s+/i,
             /^>\s*\/dev\/null/i,
             /\|\s*tee\s+/i
         ];
@@ -61,15 +39,7 @@ export class TerminalManager {
             }
         }
 
-        // Check for safe patterns
-        for (const pattern of safePatterns) {
-            if (pattern.test(command)) {
-                return true;
-            }
-        }
-
-        // Default to unsafe for unknown commands
-        return false;
+        return true;
     }
 
     private truncateOutput(output: string): string {
@@ -112,7 +82,7 @@ export class TerminalManager {
             const { stdout, stderr } = await execAsync(command, { 
                 cwd: workspacePath,
                 encoding: 'utf8',
-                timeout: 30000 // Timeout 30 detik
+                timeout: 30000 
             });
 
             // Clean up the output
@@ -122,7 +92,7 @@ export class TerminalManager {
             if (stderr && !stdout) {
                 this.outputChannel.appendLine(`Stderr: ${stderr}`);
             } else if (stdout) {
-                this.outputChannel.appendLine(`Output: ${stdout.substring(0, 500)}...`); // Log hanya 500 karakter pertama
+                this.outputChannel.appendLine(`Output: ${stdout.substring(0, 500)}...`);
             }
 
             const result: TerminalOperationResult = {

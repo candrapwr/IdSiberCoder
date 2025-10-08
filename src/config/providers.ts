@@ -24,7 +24,9 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         models: [
             { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
             { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' },
-            { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' }
+            { id: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite' },
+            { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+            { id: 'gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash Lite' }
         ]
     },
     deepseek: {
@@ -57,8 +59,9 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         defaultModel: 'glm-4.5-flash',
         defaultMaxTokens: 8000,
         models: [
-            { id: 'glm-4.5-flash', label: 'GLM-4.5-Flash' },
-            { id: 'glm-4.5', label: 'GLM-4.5' }
+            { id: 'glm-4.6', label: 'GLM-4.6' },
+            { id: 'glm-4.5', label: 'GLM-4.5' },
+            { id: 'glm-4.5-flash', label: 'GLM-4.5-Flash' }
         ]
     },
     grok: {
