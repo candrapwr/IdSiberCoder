@@ -98,6 +98,7 @@ export const PROVIDERS: Record<ProviderId, ProviderMetadata> = {
         models: [
             { id: 'deepseek/deepseek-v3.1-terminus', label: 'DeepSeek v3.1 Terminus' },
             { id: 'deepseek/deepseek-v3.2-exp', label: 'DeepSeek v3.2 Exp' },
+            { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
             { id: 'qwen/qwen3-coder-480b-a35b-instruct', label: 'Qwen Coder' }
         ]
     }
